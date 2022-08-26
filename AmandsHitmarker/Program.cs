@@ -54,7 +54,7 @@ namespace AmandsHitmarker
         private void Start()
         {
             Thickness = Config.Bind<Vector2>("AmandsHitmarker", "Thickness", new Vector2(40.0f, 40.0f), new ConfigDescription("Individual image size", null, new ConfigurationManagerAttributes { Order = 210 }));
-            CenterOffset = Config.Bind<float>("AmandsHitmarker", "CenterOffset", 10.0f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 200 }));
+            CenterOffset = Config.Bind<float>("AmandsHitmarker", "CenterOffset", 15.0f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 200 }));
             OffsetSpeed = Config.Bind<float>("AmandsHitmarker", "OffsetSpeed", 0.05f, new ConfigDescription("Animation size increase", null, new ConfigurationManagerAttributes { Order = 190 }));
             OpacitySpeed = Config.Bind<float>("AmandsHitmarker", "OpacitySpeed", 0.05f, new ConfigDescription("Animation opacity decrease", null, new ConfigurationManagerAttributes { Order = 180 }));
             Shape = Config.Bind<string>("AmandsHitmarker", "Shape", "Hitmarker.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 170 }));
@@ -91,7 +91,7 @@ namespace AmandsHitmarker
             StaticHitmarkerOnly = Config.Bind<bool>("Static", "StaticHitmarkerOnly", false, new ConfigDescription("Use only the static hitmarker image", null, new ConfigurationManagerAttributes { Order = 140, IsAdvanced = true }));
             StaticSizeDelta = Config.Bind<Vector2>("Static", "StaticSizeDelta", new Vector2(40.0f, 40.0f), new ConfigDescription("Static hitmarker size", null, new ConfigurationManagerAttributes { Order = 130, IsAdvanced = true }));
             StaticSizeDeltaSpeed = Config.Bind<float>("Static", "StaticSizeDeltaSpeed", 0.01f, new ConfigDescription("Animation size increase", null, new ConfigurationManagerAttributes { Order = 120, IsAdvanced = true }));
-            StaticOpacity = Config.Bind<float>("Static", "StaticOpacity", 1.0f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
+            StaticOpacity = Config.Bind<float>("Static", "StaticOpacity", 0.5f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
         }
     }
 }
