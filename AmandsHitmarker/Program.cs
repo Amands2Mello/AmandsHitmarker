@@ -1,10 +1,10 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "1.1.0")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "1.1.1")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -91,7 +91,7 @@ namespace AmandsHitmarker
             StaticHitmarkerOnly = Config.Bind<bool>("Static", "StaticHitmarkerOnly", false, new ConfigDescription("Use only the static hitmarker image", null, new ConfigurationManagerAttributes { Order = 140, IsAdvanced = true }));
             StaticSizeDelta = Config.Bind<Vector2>("Static", "StaticSizeDelta", new Vector2(40.0f, 40.0f), new ConfigDescription("Static hitmarker size", null, new ConfigurationManagerAttributes { Order = 130, IsAdvanced = true }));
             StaticSizeDeltaSpeed = Config.Bind<float>("Static", "StaticSizeDeltaSpeed", 0.01f, new ConfigDescription("Animation size increase", null, new ConfigurationManagerAttributes { Order = 120, IsAdvanced = true }));
-            StaticOpacity = Config.Bind<float>("Static", "StaticOpacity", 0.5f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
+            StaticOpacity = Config.Bind<float>("Static", "StaticOpacity", 0.25f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
         }
     }
 }
