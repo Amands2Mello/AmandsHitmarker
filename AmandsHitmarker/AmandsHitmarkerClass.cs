@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
@@ -106,8 +106,8 @@ namespace AmandsHitmarker
             UpdateInterval += 1;
             if (sessionCounters != null)
             {
-                sessionCounters.Counters.TryGetValue(GClass1853.HitCount, out hitCount);
-                sessionCounters.Counters.TryGetValue(GClass1853.Kills, out kills);
+                sessionCounters.Counters.TryGetValue(GClass1865.HitCount, out hitCount);
+                sessionCounters.Counters.TryGetValue(GClass1865.Kills, out kills);
                 if (hitCount != lastHitCount || kills != lastKills)
                 {
                     if (AHitmarkerPlugin.EnableSounds.Value && DebugOffset == Vector3.zero)
@@ -123,13 +123,13 @@ namespace AmandsHitmarker
                     }
                     wasBleed = hitCount == lastHitCount ? true : false;
                     lastHitCount = hitCount;
-                    sessionCounters.Counters.TryGetValue(GClass1853.CauseArmorDamage, out causeArmorDamage);
-                    sessionCounters.Counters.TryGetValue(GClass1853.HeadShots, out headShots);
-                    sessionCounters.Counters.TryGetValue(GClass1853.KilledBear, out killedBear);
-                    sessionCounters.Counters.TryGetValue(GClass1853.KilledUsec, out killedUsec);
-                    sessionCounters.Counters.TryGetValue(GClass1853.KilledSavage, out killedSavage);
-                    sessionCounters.Counters.TryGetValue(GClass1853.KilledWithThrowWeapon, out killedWithThrowWeapon);
-                    sessionCounters.Counters.TryGetValue(GClass1853.KilledBoss, out killedBoss);
+                    sessionCounters.Counters.TryGetValue(GClass1865.CauseArmorDamage, out causeArmorDamage);
+                    sessionCounters.Counters.TryGetValue(GClass1865.HeadShots, out headShots);
+                    sessionCounters.Counters.TryGetValue(GClass1865.KilledBear, out killedBear);
+                    sessionCounters.Counters.TryGetValue(GClass1865.KilledUsec, out killedUsec);
+                    sessionCounters.Counters.TryGetValue(GClass1865.KilledSavage, out killedSavage);
+                    sessionCounters.Counters.TryGetValue(GClass1865.KilledWithThrowWeapon, out killedWithThrowWeapon);
+                    sessionCounters.Counters.TryGetValue(GClass1865.KilledBoss, out killedBoss);
                     HitmarkerColor = AHitmarkerPlugin.HitmarkerColor.Value;
                     if (!AHitmarkerPlugin.StaticHitmarkerOnly.Value)
                     {
