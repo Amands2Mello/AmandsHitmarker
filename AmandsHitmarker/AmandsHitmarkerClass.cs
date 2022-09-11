@@ -6,19 +6,44 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
 using EFT;
-using EFT.UI;
 using Comfort.Common;
+using TMPro;
+using static EFT.Player;
+using EFT.UI;
 
 namespace AmandsHitmarker
 {
     public class AmandsHitmarkerClass : MonoBehaviour
     {
-        private static GameObject gameSceneCanvas;
+        public static GameObject killListGameObject;
+        public static AmandsAnimatedText LastAmandsAnimatedText;
+        public static bool hitmarker;
+        public static DamageInfo damageInfo = new DamageInfo();
+        public static EBodyPart bodyPart = EBodyPart.Chest;
+        public static bool armorHitmarker;
+        public static float armorDamage;
+        public static DamageInfo armorDamageInfo;
+        public static bool armorBreak;
+        public static bool killHitmarker;
+        public static DamageInfo killDamageInfo = new DamageInfo();
+        public static EPlayerSide killPlayerSide;
+        public static EBodyPart killBodyPart = EBodyPart.Chest;
+        public static WildSpawnType killRole;
+        public static string killPlayerName;
+        public static int killExperience;
+        public static float killDistance;
+        public static EDamageType lethalDamageType;
+        public static string killWeaponName;
+        private static RectTransform rectTransform;
+        private static VerticalLayoutGroup verticalLayoutGroup;
+
+        private static GameObject BattleUIScreen;
         private static Dictionary<string, Sprite> LoadedSprites = new Dictionary<string, Sprite>();
         private static Dictionary<string, AudioClip> LoadedAudioClips = new Dictionary<string, AudioClip>();
         private static Sprite sprite;
-        private static SessionCountersClass sessionCounters;
-        private static LocalPlayer localPlayer;
+        public static GameObject PlayerSuperior;
+        public static FirearmController firearmController;
+        public static LocalPlayer localPlayer;
         private static GameObject TLH;
         private static GameObject TRH;
         private static GameObject BLH;
@@ -35,42 +60,40 @@ namespace AmandsHitmarker
         private static Vector3 TRHOffset = new Vector3(1, 1, 0);
         private static Vector3 BLHOffset = new Vector3(-1, -1, 0);
         private static Vector3 BRHOffset = new Vector3(1, -1, 0);
-        private static Vector3 DebugOffset = Vector3.zero;
+        private static Vector3 TLHOffsetAnim = Vector3.zero;
+        private static Vector3 TRHOffsetAnim = Vector3.zero;
+        private static Vector3 BLHOffsetAnim = Vector3.zero;
+        private static Vector3 BRHOffsetAnim = Vector3.zero;
         private static GameObject BleedHitmarker;
         private static RectTransform BleedRect;
         private static Image BleedImage;
         private static GameObject StaticHitmarker;
         private static Image StaticHitmarkerImage;
         private static RectTransform StaticHitmarkerRect;
+        private static bool ForceHitmarkerPosition = false;
+        private static Vector3 HitmarkerPosition = Vector3.zero;
+        private static Vector3 HitmarkerPositionSnapshot = Vector3.zero;
+        private static Vector3 position = Vector3.zero;
+        private static Vector3 weaponDirection = Vector3.zero;
 
-        private static float HitmarkerAlpha = 0.0f;
+        private static float HitmarkerOpacity = 0.0f;
+        private static float HitmarkerCenterOffset = 0.0f;
         private static Color HitmarkerColor = new Color(1.0f, 1.0f, 1.0f);
-        private static bool wasBleed = false;
+        private static Color BleedColor = new Color(1.0f, 0.0f, 0.0f);
         private static AudioClip audioClip;
 
-        private static long hitCount = 0;
-        private static long lastHitCount = 0;
-        private static long causeArmorDamage = 0;
-        private static long lastCauseArmorDamage = 0;
-        private static long headShots = 0;
-        private static long lastHeadShots = 0;
-        private static long kills = 0;
-        private static long lastKills = 0;
-        private static long killedBear = 0;
-        private static long lastKilledBear = 0;
-        private static long killedUsec = 0;
-        private static long lastKilledUsec = 0;
-        private static long killedSavage = 0;
-        private static long lastKilledSavage = 0;
-        private static long killedWithThrowWeapon = 0;
-        private static long lastKilledWithThrowWeapon = 0;
-        private static long killedBoss = 0;
-        private static long lastKilledBoss = 0;
+        private static bool DebugMode = false;
+        private static Vector3 DebugOffset = Vector3.zero;
+        private static string[] DebugWeapons = { "RD-704", "MGSL", "P90", "MCX .300 BLK", "G36 E", "FN 5-7", "AXMC", "SV-98" };
+        private static string[] DebugNames = { "Mellone", "1234567890123456", "SuperLongName", "1", "12", "123", "aaaaa", "AAAAAAAAAAAAAA", "Debug", "Test" };
 
         private static int UpdateInterval = 0;
 
         public void Start()
         {
+
+            AHitmarkerPlugin.EnableHitmarker.SettingChanged += HitmarkerDebug;
+            AHitmarkerPlugin.EnableBleeding.SettingChanged += BleedHitmarkerDebug;
             AHitmarkerPlugin.Thickness.SettingChanged += HitmarkerDebug;
             AHitmarkerPlugin.CenterOffset.SettingChanged += HitmarkerDebug;
             AHitmarkerPlugin.OffsetSpeed.SettingChanged += HitmarkerDebug;
@@ -83,265 +106,576 @@ namespace AmandsHitmarker
             AHitmarkerPlugin.UsecColor.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.ScavColor.SettingChanged += ScavHitmarkerDebug;
             AHitmarkerPlugin.ThrowWeaponColor.SettingChanged += ThrowWeaponHitmarkerDebug;
+            AHitmarkerPlugin.FollowerColor.SettingChanged += FollowerHitmarkerDebug;
             AHitmarkerPlugin.BossColor.SettingChanged += BossHitmarkerDebug;
             AHitmarkerPlugin.BleedColor.SettingChanged += BleedHitmarkerDebug;
+            AHitmarkerPlugin.PoisonColor.SettingChanged += PoisonHitmarkerDebug;
 
             AHitmarkerPlugin.HitmarkerDebug.SettingChanged += HitmarkerDebug;
             AHitmarkerPlugin.HeadshotHitmarkerDebug.SettingChanged += HeadshotHitmarkerDebug; 
             AHitmarkerPlugin.BleedHitmarkerDebug.SettingChanged += BleedHitmarkerDebug;
+            AHitmarkerPlugin.PoisonHitmarkerDebug.SettingChanged += PoisonHitmarkerDebug;
             AHitmarkerPlugin.ArmorHitmarkerDebug.SettingChanged += ArmorHitmarkerDebug;
-            AHitmarkerPlugin.UsecHitmarkerDebug.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.BearHitmarkerDebug.SettingChanged += BearHitmarkerDebug;
+            AHitmarkerPlugin.UsecHitmarkerDebug.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.ScavHitmarkerDebug.SettingChanged += ScavHitmarkerDebug;
             AHitmarkerPlugin.ThrowWeaponHitmarkerDebug.SettingChanged += ThrowWeaponHitmarkerDebug;
+            AHitmarkerPlugin.FollowerHitmarkerDebug.SettingChanged += FollowerHitmarkerDebug;
             AHitmarkerPlugin.BossHitmarkerDebug.SettingChanged += BossHitmarkerDebug;
             AHitmarkerPlugin.HitmarkerSoundDebug.SettingChanged += HitmarkerSoundDebug;
             AHitmarkerPlugin.HeadshotHitmarkerSoundDebug.SettingChanged += HeadshotHitmarkerSoundDebug;
+            AHitmarkerPlugin.ArmorSoundDebug.SettingChanged += ArmorSoundDebug;
+            AHitmarkerPlugin.ArmorBreakSoundDebug.SettingChanged += ArmorBreakSoundDebug;
             AHitmarkerPlugin.KillHitmarkerSoundDebug.SettingChanged += KillHitmarkerSoundDebug;
+            AHitmarkerPlugin.ReloadFiles.SettingChanged += ReloadFilesDebug;
+            AHitmarkerPlugin.ReloadBattleUIScreen.SettingChanged += ReloadBattleUIScreen;
+
+            AHitmarkerPlugin.EnableKillfeed.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillTextColor.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillFontSize.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillFontOutline.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillFontUpperCase.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillChildSpacing.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillPreset.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillRectPosition.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillRectPivot.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillChildDirection.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillTextAlignment.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillOpacitySpeed.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillUpperText.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillStart.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillNameColor.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillNameSingleColor.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillEnd.SettingChanged += UsecHitmarkerDebug;
+            AHitmarkerPlugin.KillDistanceThreshold.SettingChanged += UsecHitmarkerDebug;
+
+
+            AHitmarkerPlugin.KillChildSpacing.SettingChanged += UpdateKillfeed;
+            AHitmarkerPlugin.KillPreset.SettingChanged += UpdateKillPreset;
+            AHitmarkerPlugin.KillRectPosition.SettingChanged += UpdateKillfeed;
+            AHitmarkerPlugin.KillRectPivot.SettingChanged += UpdateKillfeed;
 
             ReloadFiles();
         }
         public void Update()
         {
-            UpdateInterval += 1;
-            if (sessionCounters != null)
+            if (hitmarker || armorHitmarker || killHitmarker && BattleUIScreen != null)
             {
-                sessionCounters.Counters.TryGetValue(GClass1865.HitCount, out hitCount);
-                sessionCounters.Counters.TryGetValue(GClass1865.Kills, out kills);
-                if (hitCount != lastHitCount || kills != lastKills)
+                ForceHitmarkerPosition = false;
+                bool tmpHitmarker = hitmarker;
+                hitmarker = false;
+                bool tmpArmorHitmarker = armorHitmarker;
+                armorHitmarker = false;
+                bool tmpArmorBreak = armorBreak;
+                armorBreak = false;
+                bool tmpKillHitmarker = killHitmarker;
+                killHitmarker = false;
+
+                // Nuclear code
+                if (!AHitmarkerPlugin.EnableBleeding.Value && (tmpKillHitmarker && !tmpHitmarker)) return;
+
+                if (AHitmarkerPlugin.EnableSounds.Value && !DebugMode)
                 {
-                    if (AHitmarkerPlugin.EnableSounds.Value && DebugOffset == Vector3.zero)
+                    if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value))
                     {
-                        if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value) && kills == lastKills)
+                        audioClip = LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value];
+                    }
+                }
+                HitmarkerColor = AHitmarkerPlugin.HitmarkerColor.Value;
+                if (bodyPart == EBodyPart.Head)
+                {
+                    if (LoadedSprites.ContainsKey(AHitmarkerPlugin.HeadshotShape.Value))
+                    {
+                        sprite = LoadedSprites[AHitmarkerPlugin.HeadshotShape.Value];
+                    }
+                    StaticHitmarkerImage.sprite = LoadedSprites["StaticHeadshotHitmarker.png"];
+                }
+                else
+                {
+                    if (LoadedSprites.ContainsKey(AHitmarkerPlugin.Shape.Value))
+                    {
+                        sprite = LoadedSprites[AHitmarkerPlugin.Shape.Value];
+                    }
+                }
+                if (tmpHitmarker)
+                {
+                    switch (damageInfo.DamageType)
+                    {
+                        case EDamageType.GrenadeFragment:
+                        case EDamageType.Explosion:
+                            ForceHitmarkerPosition = true;
+                            break;
+                    }
+                }
+                if (tmpArmorHitmarker)
+                {
+                    HitmarkerColor = AHitmarkerPlugin.ArmorColor.Value;
+                    if (tmpArmorBreak && AHitmarkerPlugin.EnableSounds.Value && !DebugMode)
+                    {
+                        audioClip = LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value];
+                    }
+                    else if (AHitmarkerPlugin.EnableSounds.Value && !DebugMode)
+                    {
+                        audioClip = LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value];
+                    }
+                }
+                BleedColor = Color.clear;
+                if (tmpKillHitmarker)
+                {
+                    switch (killPlayerSide)
+                    {
+                        case EPlayerSide.Usec:
+                            HitmarkerColor = AHitmarkerPlugin.UsecColor.Value;
+                            break;
+                        case EPlayerSide.Bear:
+                            HitmarkerColor = AHitmarkerPlugin.BearColor.Value;
+                            break;
+                        case EPlayerSide.Savage:
+                            HitmarkerColor = AHitmarkerPlugin.ScavColor.Value;
+                            break;
+                    }
+                    switch (lethalDamageType)
+                    {
+                        case EDamageType.GrenadeFragment:
+                        case EDamageType.Explosion:
+                            HitmarkerColor = AHitmarkerPlugin.ThrowWeaponColor.Value;
+                            ForceHitmarkerPosition = true;
+                            break;
+                    }
+                    if (killPlayerSide == EPlayerSide.Savage)
+                    {
+                        if (killRole.IsFollower()) HitmarkerColor = AHitmarkerPlugin.FollowerColor.Value;
+                        if (killRole.IsBoss() || killRole.CountAsBoss()) HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
+                    }
+                    //CreateText("<b>" + killDamageInfo.Weapon.LocalizedShortName() + "</b> " + "<color=#" + ColorUtility.ToHtmlStringRGB(HitmarkerColor) + ">" + (killPlayerSide == EPlayerSide.Savage ? killPlayerName.Transliterate() : killPlayerName) + "</color> " + "<b>" + ((int)killDistance) + "M" + "</b>", 26, 10f);
+                    if (AHitmarkerPlugin.KillChildDirection.Value)
+                    {
+                        CreateKillText();
+                    }
+                    string UpperText = "";
+                    switch (lethalDamageType)
+                    {
+                        case EDamageType.LightBleeding:
+                        case EDamageType.HeavyBleeding:
+                            BleedColor = AHitmarkerPlugin.BleedColor.Value;
+                            BleedRect.sizeDelta = AHitmarkerPlugin.BleedSize.Value;
+                            BleedRect.localPosition = DebugOffset;
+                            if (AHitmarkerPlugin.KillUpperText.Value)
+                            {
+                                UpperText = "<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.BleedColor.Value) + ">" + "BLEEDING" + "</color> ";
+                                //CreateUpperText("<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.BleedColor.Value) + ">" + "BLEEDING" + "</color> ", (int)(AHitmarkerPlugin.KillFontSize.Value * 0.75), AHitmarkerPlugin.KillTime.Value, AHitmarkerPlugin.KillOpacitySpeed.Value);
+                            }
+                            ForceHitmarkerPosition = true;
+                            break;
+                        case EDamageType.LethalToxin:
+                        case EDamageType.Poison:
+                            BleedColor = AHitmarkerPlugin.PoisonColor.Value;
+                            BleedRect.sizeDelta = AHitmarkerPlugin.BleedSize.Value;
+                            BleedRect.localPosition = DebugOffset;
+                            if (AHitmarkerPlugin.KillUpperText.Value)
+                            {
+                                UpperText = "<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.PoisonColor.Value) + ">" + "POISON" + "</color> ";
+                                //CreateUpperText("<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.PoisonColor.Value) + ">" + "POISON" + "</color> ", (int)(AHitmarkerPlugin.KillFontSize.Value * 0.75), AHitmarkerPlugin.KillTime.Value, AHitmarkerPlugin.KillOpacitySpeed.Value);
+                            }
+                            ForceHitmarkerPosition = true;
+                            break;
+                    }
+                    if (bodyPart == EBodyPart.Head && AHitmarkerPlugin.KillUpperText.Value)
+                    {
+                        UpperText = UpperText + "HEADSHOT";
+                        //CreateUpperText("HEADSHOT", (int)(AHitmarkerPlugin.KillFontSize.Value * 0.75), AHitmarkerPlugin.KillTime.Value, AHitmarkerPlugin.KillOpacitySpeed.Value);
+                    }
+                    if (UpperText != "")
+                    {
+                        CreateUpperText(UpperText, (int)(AHitmarkerPlugin.KillFontSize.Value * 0.75), AHitmarkerPlugin.KillTime.Value, AHitmarkerPlugin.KillOpacitySpeed.Value);
+                    }
+                    if (!AHitmarkerPlugin.KillChildDirection.Value)
+                    {
+                        CreateKillText();
+                    }
+                    if (AHitmarkerPlugin.EnableSounds.Value && !DebugMode)
+                    {
+                        if (killBodyPart == EBodyPart.Head && LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value))
                         {
-                            audioClip = LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value];
+                            audioClip = LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value];
                         }
-                        else if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && kills != lastKills)
+                        else if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))
                         {
                             audioClip = LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value];
                         }
                     }
-                    wasBleed = hitCount == lastHitCount ? true : false;
-                    lastHitCount = hitCount;
-                    sessionCounters.Counters.TryGetValue(GClass1865.CauseArmorDamage, out causeArmorDamage);
-                    sessionCounters.Counters.TryGetValue(GClass1865.HeadShots, out headShots);
-                    sessionCounters.Counters.TryGetValue(GClass1865.KilledBear, out killedBear);
-                    sessionCounters.Counters.TryGetValue(GClass1865.KilledUsec, out killedUsec);
-                    sessionCounters.Counters.TryGetValue(GClass1865.KilledSavage, out killedSavage);
-                    sessionCounters.Counters.TryGetValue(GClass1865.KilledWithThrowWeapon, out killedWithThrowWeapon);
-                    sessionCounters.Counters.TryGetValue(GClass1865.KilledBoss, out killedBoss);
-                    HitmarkerColor = AHitmarkerPlugin.HitmarkerColor.Value;
-                    if (!AHitmarkerPlugin.StaticHitmarkerOnly.Value)
+                }
+                if (AHitmarkerPlugin.EnableHitmarker.Value)
+                {
+                    if (firearmController == null && PlayerSuperior != null)
                     {
-                        if (LoadedSprites.ContainsKey(AHitmarkerPlugin.Shape.Value))
-                        {
-                            sprite = LoadedSprites[AHitmarkerPlugin.Shape.Value];
-                        }
-                        TLHImage.sprite = sprite;
-                        TRHImage.sprite = sprite;
-                        BLHImage.sprite = sprite;
-                        BRHImage.sprite = sprite;
-                        TLHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value;
-                        TRHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value;
-                        BLHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value;
-                        BRHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value;
-                        TLHRect.localPosition = DebugOffset + TLHOffset * AHitmarkerPlugin.CenterOffset.Value;
-                        TRHRect.localPosition = DebugOffset + TRHOffset * AHitmarkerPlugin.CenterOffset.Value;
-                        BLHRect.localPosition = DebugOffset + BLHOffset * AHitmarkerPlugin.CenterOffset.Value;
-                        BRHRect.localPosition = DebugOffset + BRHOffset * AHitmarkerPlugin.CenterOffset.Value;
+                        firearmController = PlayerSuperior.GetComponent<FirearmController>();
                     }
-                    StaticHitmarkerImage.sprite = LoadedSprites["StaticHitmarker.png"];
-                    if (headShots != lastHeadShots)
-                    {
-                        lastHeadShots = headShots;
-                        if (!AHitmarkerPlugin.StaticHitmarkerOnly.Value)
-                        {
-                            if (LoadedSprites.ContainsKey(AHitmarkerPlugin.HeadshotShape.Value))
-                            {
-                                sprite = LoadedSprites[AHitmarkerPlugin.HeadshotShape.Value];
-                                TLHImage.sprite = sprite;
-                                TRHImage.sprite = sprite;
-                                BLHImage.sprite = sprite;
-                                BRHImage.sprite = sprite;
-                            }
-                        }
-                        StaticHitmarkerImage.sprite = LoadedSprites["StaticHeadshotHitmarker.png"];
-                        if (AHitmarkerPlugin.EnableSounds.Value && kills != lastKills && DebugOffset == Vector3.zero)
-                        {
-                            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value))
-                            {
-                                audioClip = LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value];
-                            }
-                        }
-                    }
-                    lastKills = kills;
-                    if (causeArmorDamage != lastCauseArmorDamage)
-                    {
-                        lastCauseArmorDamage = causeArmorDamage;
-                        HitmarkerColor = AHitmarkerPlugin.ArmorColor.Value;
-                    }
-                    if (killedBear != lastKilledBear)
-                    {
-                        lastKilledBear = killedBear;
-                        HitmarkerColor = AHitmarkerPlugin.BearColor.Value;
-                    }
-                    if (killedUsec != lastKilledUsec)
-                    {
-                        lastKilledUsec = killedUsec;
-                        HitmarkerColor = AHitmarkerPlugin.UsecColor.Value;
-                    }
-                    else if (killedSavage != lastKilledSavage)
-                    {
-                        lastKilledSavage = killedSavage;
-                        HitmarkerColor = AHitmarkerPlugin.ScavColor.Value;
-                    }
-                    if (killedWithThrowWeapon != lastKilledWithThrowWeapon)
-                    {
-                        lastKilledWithThrowWeapon = killedWithThrowWeapon;
-                        HitmarkerColor = AHitmarkerPlugin.ThrowWeaponColor.Value;
-                    }
-                    if (killedBoss != lastKilledBoss)
-                    {
-                        lastKilledBoss = killedBoss;
-                        HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
-                    }
-                    if (wasBleed)
-                    {
-                        BleedRect.sizeDelta = AHitmarkerPlugin.BleedSize.Value;
-                        BleedRect.localPosition = DebugOffset;
-                    }
-                    HitmarkerAlpha = 1.0f;
-                    StaticHitmarkerRect.localPosition = DebugOffset;
+                    Vector2 ScreenPointSnapshot = Camera.main.WorldToScreenPoint(damageInfo.HitPoint);
+                    HitmarkerPositionSnapshot = new Vector2(ScreenPointSnapshot.x - (Screen.width / 2), ScreenPointSnapshot.y - (Screen.height / 2));
+                    TLHImage.sprite = sprite; TRHImage.sprite = sprite;
+                    BLHImage.sprite = sprite; BRHImage.sprite = sprite;
+                    TLHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value; TRHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value;
+                    BLHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value; BRHRect.sizeDelta = AHitmarkerPlugin.Thickness.Value;
                     StaticHitmarkerRect.sizeDelta = AHitmarkerPlugin.StaticSizeDelta.Value;
 
-                    if (AHitmarkerPlugin.EnableSounds.Value && DebugOffset == Vector3.zero)
+                    HitmarkerCenterOffset = AHitmarkerPlugin.CenterOffset.Value;
+
+                    HitmarkerPosition = Vector3.zero;
+                    HitmarkerOpacity = 1.0f;
+                }
+                if (AHitmarkerPlugin.EnableSounds.Value && Singleton<BetterAudio>.Instance != null && !DebugMode)
+                {
+                    Singleton<BetterAudio>.Instance.PlayNonspatial(audioClip, BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                }
+            }
+            if (HitmarkerOpacity > 0)
+            {
+                if (firearmController != null && !DebugMode)
+                {
+                    EHitmarkerPositionMode HitmarkerPositionMode = firearmController.IsAiming ? AHitmarkerPlugin.ADSHitmarkerPositionMode.Value : AHitmarkerPlugin.HitmarkerPositionMode.Value;
+                    if (ForceHitmarkerPosition) HitmarkerPositionMode = EHitmarkerPositionMode.Center;
+                    switch (HitmarkerPositionMode)
                     {
-                        Singleton<GUISounds>.Instance.PlaySound(audioClip);
+                        case EHitmarkerPositionMode.Center:
+                            HitmarkerPosition = Vector3.zero;
+                            break;
+                        case EHitmarkerPositionMode.GunDirection:
+                            position = firearmController.CurrentFireport.position;
+                            weaponDirection = firearmController.WeaponDirection;
+                            firearmController.AdjustShotVectors(ref position, ref weaponDirection);
+                            Vector2 ScreenPoint = Camera.main.WorldToScreenPoint(position + (weaponDirection * 100));
+                            HitmarkerPosition = new Vector2(ScreenPoint.x - (Screen.width / 2), ScreenPoint.y - (Screen.height / 2));
+                            break;
+                        case EHitmarkerPositionMode.ImpactPoint:
+                            Vector2 ScreenPoint2 = Camera.main.WorldToScreenPoint(damageInfo.HitPoint);
+                            HitmarkerPosition = new Vector2(ScreenPoint2.x - (Screen.width / 2), ScreenPoint2.y - (Screen.height / 2));
+                            break;
+                        case EHitmarkerPositionMode.ImpactPointStatic:
+                            HitmarkerPosition = HitmarkerPositionSnapshot;
+                            break;
                     }
                 }
-                if (HitmarkerAlpha > 0)
+                HitmarkerOpacity -= AHitmarkerPlugin.OpacitySpeed.Value;
+                if (AHitmarkerPlugin.StaticHitmarkerOnly.Value)
                 {
-                    HitmarkerAlpha -= AHitmarkerPlugin.OpacitySpeed.Value;
-                    if (AHitmarkerPlugin.StaticHitmarkerOnly.Value)
-                    {
-                        StaticHitmarkerImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerAlpha * AHitmarkerPlugin.StaticOpacity.Value);
-                        StaticHitmarkerRect.sizeDelta += Vector2.one * AHitmarkerPlugin.StaticSizeDeltaSpeed.Value;
-                        TLHImage.color = Color.clear;
-                        TRHImage.color = Color.clear;
-                        BLHImage.color = Color.clear;
-                        BRHImage.color = Color.clear;
-                    }
-                    else
-                    {
-                        StaticHitmarkerImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerAlpha * AHitmarkerPlugin.StaticOpacity.Value);
-                        StaticHitmarkerRect.sizeDelta += Vector2.one * AHitmarkerPlugin.StaticSizeDeltaSpeed.Value;
-                        TLHRect.localPosition += TLHOffset * AHitmarkerPlugin.OffsetSpeed.Value;
-                        TRHRect.localPosition += TRHOffset * AHitmarkerPlugin.OffsetSpeed.Value;
-                        BLHRect.localPosition += BLHOffset * AHitmarkerPlugin.OffsetSpeed.Value;
-                        BRHRect.localPosition += BRHOffset * AHitmarkerPlugin.OffsetSpeed.Value;
-                        TLHImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerAlpha);
-                        TRHImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerAlpha);
-                        BLHImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerAlpha);
-                        BRHImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerAlpha);
-                    }
-                    BleedImage.color = wasBleed ? new Color(AHitmarkerPlugin.BleedColor.Value.r, AHitmarkerPlugin.BleedColor.Value.g, AHitmarkerPlugin.BleedColor.Value.b, AHitmarkerPlugin.BleedColor.Value.a * HitmarkerAlpha) : Color.clear;
+                    StaticHitmarkerImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerOpacity * AHitmarkerPlugin.StaticOpacity.Value);
+                    StaticHitmarkerRect.sizeDelta += Vector2.one * AHitmarkerPlugin.StaticSizeDeltaSpeed.Value;
+                    StaticHitmarkerRect.localPosition = DebugOffset + HitmarkerPosition;
+                    TLHImage.color = Color.clear; TRHImage.color = Color.clear; 
+                    BLHImage.color = Color.clear; BRHImage.color = Color.clear;
+                    BleedImage.color = new Color(BleedColor.r, BleedColor.g, BleedColor.b, BleedColor.a * HitmarkerOpacity);
                 }
                 else
                 {
-                    DebugOffset = Vector3.zero;
+                    StaticHitmarkerRect.sizeDelta += Vector2.one * AHitmarkerPlugin.StaticSizeDeltaSpeed.Value;
+                    HitmarkerCenterOffset += AHitmarkerPlugin.OffsetSpeed.Value;
+                    TLHOffsetAnim = TLHOffset * HitmarkerCenterOffset;
+                    TRHOffsetAnim = TRHOffset * HitmarkerCenterOffset;
+                    BLHOffsetAnim = BLHOffset * HitmarkerCenterOffset;
+                    BRHOffsetAnim = BRHOffset * HitmarkerCenterOffset;
+                    TLHRect.localPosition = DebugOffset + HitmarkerPosition + TLHOffsetAnim;
+                    TRHRect.localPosition = DebugOffset + HitmarkerPosition + TRHOffsetAnim;
+                    BLHRect.localPosition = DebugOffset + HitmarkerPosition + BLHOffsetAnim;
+                    BRHRect.localPosition = DebugOffset + HitmarkerPosition + BRHOffsetAnim;
+                    BleedRect.localPosition = DebugOffset + HitmarkerPosition;
+                    StaticHitmarkerRect.localPosition = DebugOffset + HitmarkerPosition;
+                    Color ImageColor = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerOpacity);
+                    TLHImage.color = ImageColor; TRHImage.color = ImageColor; 
+                    BLHImage.color = ImageColor; BRHImage.color = ImageColor;
+                    BleedImage.color = new Color(BleedColor.r, BleedColor.g, BleedColor.b, BleedColor.a * HitmarkerOpacity);
+                    StaticHitmarkerImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerOpacity * AHitmarkerPlugin.StaticOpacity.Value);
                 }
-
             }
+            else
+            {
+                DebugMode = false;
+                DebugOffset = Vector3.zero;
+            }
+            UpdateInterval += 1;
             if (UpdateInterval > 500)
             {
                 UpdateInterval = 0;
-                hitCount += 1;
-                if (gameSceneCanvas == null)
+                if (BattleUIScreen == null)
                 {
-                    gameSceneCanvas = GameObject.Find("Game Scene");
-                    if (gameSceneCanvas != null)
+                    BattleUIScreen = GameObject.Find("BattleUIScreen");
+                    if (BattleUIScreen != null)
                     {
                         // Devious code
+                        if (killListGameObject != null) Destroy(killListGameObject);
+                        killListGameObject = new GameObject("killList");
+                        rectTransform = killListGameObject.AddComponent<RectTransform>();
+                        killListGameObject.transform.SetParent(BattleUIScreen.transform);
+                        rectTransform.anchorMin = Vector2.zero;
+                        rectTransform.anchorMax = Vector2.zero;
+                        rectTransform.sizeDelta = new Vector2(0f, 0f);
+                        verticalLayoutGroup = killListGameObject.AddComponent<VerticalLayoutGroup>();
+                        verticalLayoutGroup.childControlHeight = false;
+                        verticalLayoutGroup.spacing = AHitmarkerPlugin.KillChildSpacing.Value;
+                        ContentSizeFitter contentSizeFitter = killListGameObject.AddComponent<ContentSizeFitter>();
+                        contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                        contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                        rectTransform.localPosition = new Vector3(AHitmarkerPlugin.KillRectPosition.Value.x, AHitmarkerPlugin.KillRectPosition.Value.y, 0f);
+                        rectTransform.pivot = AHitmarkerPlugin.KillRectPivot.Value;
+
+                        if (BleedHitmarker != null) Destroy(BleedHitmarker);
                         BleedHitmarker = new GameObject("BleedHitmarker");
                         BleedRect = BleedHitmarker.AddComponent<RectTransform>();
                         BleedImage = BleedHitmarker.AddComponent<Image>();
-                        BleedHitmarker.transform.SetParent(gameSceneCanvas.transform);
+                        BleedHitmarker.transform.SetParent(BattleUIScreen.transform);
                         BleedImage.sprite = LoadedSprites["BleedHitmarker.png"];
                         BleedImage.raycastTarget = false;
-                        BleedImage.color = new Color(1, 1, 1, 0);
+                        BleedImage.color = Color.clear;
 
+                        if (StaticHitmarker != null) Destroy(StaticHitmarker);
                         StaticHitmarker = new GameObject("StaticHitmarker");
                         StaticHitmarkerRect = StaticHitmarker.AddComponent<RectTransform>();
                         StaticHitmarkerImage = StaticHitmarker.AddComponent<Image>();
-                        StaticHitmarker.transform.SetParent(gameSceneCanvas.transform);
+                        StaticHitmarker.transform.SetParent(BattleUIScreen.transform);
                         StaticHitmarkerImage.sprite = LoadedSprites["StaticHitmarker.png"];
                         StaticHitmarkerImage.raycastTarget = false;
-                        StaticHitmarkerImage.color = new Color(1, 1, 1, 0);
+                        StaticHitmarkerImage.color = Color.clear;
 
+                        if (TLH != null) Destroy(TLH);
                         TLH = new GameObject("TLH");
                         TLHRect = TLH.AddComponent<RectTransform>();
                         TLHImage = TLH.AddComponent<Image>();
-                        TLH.transform.SetParent(gameSceneCanvas.transform);
+                        TLH.transform.SetParent(BattleUIScreen.transform);
                         TLHImage.sprite = LoadedSprites[AHitmarkerPlugin.Shape.Value];
                         TLHImage.raycastTarget = false;
-                        TLHImage.color = new Color(1, 1, 1, 0);
+                        TLHImage.color = Color.clear;
                         TLHRect.localRotation = Quaternion.Euler(0, 0, 45);
 
+                        if (TRH != null) Destroy(TRH);
                         TRH = new GameObject("TRH");
                         TRHRect = TRH.AddComponent<RectTransform>();
                         TRHImage = TRH.AddComponent<Image>();
-                        TRH.transform.SetParent(gameSceneCanvas.transform);
+                        TRH.transform.SetParent(BattleUIScreen.transform);
                         TRHImage.sprite = LoadedSprites[AHitmarkerPlugin.Shape.Value];
                         TRHImage.raycastTarget = false;
-                        TRHImage.color = new Color(1, 1, 1, 0);
+                        TRHImage.color = Color.clear;
                         TRHRect.localRotation = Quaternion.Euler(0, 0, -45);
 
+                        if (BLH != null) Destroy(BLH);
                         BLH = new GameObject("BLH");
                         BLHRect = BLH.AddComponent<RectTransform>();
                         BLHImage = BLH.AddComponent<Image>();
-                        BLH.transform.SetParent(gameSceneCanvas.transform);
+                        BLH.transform.SetParent(BattleUIScreen.transform);
                         BLHImage.sprite = LoadedSprites[AHitmarkerPlugin.Shape.Value];
                         BLHImage.raycastTarget = false;
-                        BLHImage.color = new Color(1, 1, 1, 0);
+                        BLHImage.color = Color.clear;
                         BLHRect.localRotation = Quaternion.Euler(0, 0, -45);
 
+                        if (BRH != null) Destroy(BRH);
                         BRH = new GameObject("BRH");
                         BRHRect = BRH.AddComponent<RectTransform>();
                         BRHImage = BRH.AddComponent<Image>();
-                        BRH.transform.SetParent(gameSceneCanvas.transform);
+                        BRH.transform.SetParent(BattleUIScreen.transform);
                         BRHImage.sprite = LoadedSprites[AHitmarkerPlugin.Shape.Value];
                         BRHImage.raycastTarget = false;
-                        BRHImage.color = new Color(1, 1, 1, 0);
+                        BRHImage.color = Color.clear;
                         BRHRect.localRotation = Quaternion.Euler(0, 0, 45);
                     }
                 }
-                if (sessionCounters == null || localPlayer == null)
+                if (localPlayer == null)
                 {
                     localPlayer = FindObjectOfType<LocalPlayer>();
                     if (localPlayer != null)
                     {
-                        hitCount = 0;
-                        lastHitCount = 0;
-                        causeArmorDamage = 0;
-                        lastCauseArmorDamage = 0;
-                        headShots = 0;
-                        lastHeadShots = 0;
-                        kills = 0;
-                        lastKills = 0;
-                        killedBear = 0;
-                        lastKilledBear = 0;
-                        killedUsec = 0;
-                        lastKilledUsec = 0;
-                        killedSavage = 0;
-                        lastKilledSavage = 0;
-                        killedWithThrowWeapon = 0;
-                        lastKilledWithThrowWeapon = 0;
-                        killedBoss = 0;
-                        lastKilledBoss = 0;
-                        sessionCounters = localPlayer.Profile.Stats.SessionCounters;
+                        PlayerSuperior = localPlayer.gameObject;
                     }
                 }
             }
+        }
+        public void CreateDebugText(string text, int fontSize, float time)
+        {
+            if (!AHitmarkerPlugin.EnableKillfeed.Value) return;
+            GameObject TextGameObject = new GameObject("TextGameObject");
+            TextGameObject.transform.SetParent(killListGameObject.transform);
+            if (AHitmarkerPlugin.KillChildDirection.Value)
+            {
+                TextGameObject.transform.SetSiblingIndex(0);
+            }
+            AmandsAnimatedText TempAmandsAnimatedText = TextGameObject.AddComponent<AmandsAnimatedText>();
+            TempAmandsAnimatedText.text = text;
+            TempAmandsAnimatedText.color = AHitmarkerPlugin.KillTextColor.Value;
+            TempAmandsAnimatedText.fontSize = fontSize;
+            TempAmandsAnimatedText.outlineWidth = AHitmarkerPlugin.KillFontOutline.Value;
+            TempAmandsAnimatedText.textAlignmentOptions = AHitmarkerPlugin.KillTextAlignment.Value;
+            TempAmandsAnimatedText.EnableWaitAndStart = false;
+            Destroy(TextGameObject, time);
+        }
+        public void CreateUpperText(string text, int fontSize, float time, float OpacitySpeed)
+        {
+            if (!AHitmarkerPlugin.EnableKillfeed.Value) return;
+            GameObject TextGameObject = new GameObject("TextGameObject");
+            TextGameObject.transform.SetParent(killListGameObject.transform);
+            if (AHitmarkerPlugin.KillChildDirection.Value)
+            {
+                TextGameObject.transform.SetSiblingIndex(0);
+            }
+            AmandsAnimatedText TempAmandsAnimatedText = TextGameObject.AddComponent<AmandsAnimatedText>();
+            TempAmandsAnimatedText.text = text;
+            TempAmandsAnimatedText.color = AHitmarkerPlugin.KillTextColor.Value;
+            TempAmandsAnimatedText.fontSize = fontSize;
+            TempAmandsAnimatedText.outlineWidth = AHitmarkerPlugin.KillFontOutline.Value;
+            TempAmandsAnimatedText.time = time;
+            TempAmandsAnimatedText.OpacitySpeed = OpacitySpeed;
+            TempAmandsAnimatedText.textAlignmentOptions = AHitmarkerPlugin.KillTextAlignment.Value;
+            LastAmandsAnimatedText = TempAmandsAnimatedText;
+            Destroy(TextGameObject, time * 10);
+        }
+        public void CreateKillText()
+        {
+            if (!AHitmarkerPlugin.EnableKillfeed.Value) return;
+            string Start = "";
+            string RoleName = "";
+            Color RoleColor = Color.white;
+            string Name = "";
+            string End = "";
+            switch (killPlayerSide)
+            {
+                case EPlayerSide.Usec:
+                    RoleName = "USEC";
+                    RoleColor = AHitmarkerPlugin.UsecColor.Value;
+                    break;
+                case EPlayerSide.Bear:
+                    RoleName = "BEAR";
+                    RoleColor = AHitmarkerPlugin.BearColor.Value;
+                    break;
+                case EPlayerSide.Savage:
+                    RoleColor = AHitmarkerPlugin.ScavColor.Value;
+                    break;
+            }
+            if (killPlayerSide == EPlayerSide.Savage)
+            {
+                RoleName = killRole.GetScavRoleKey().Localized(EStringCase.Upper);
+                if (killRole.IsFollower()) RoleColor = AHitmarkerPlugin.FollowerColor.Value;
+                if (killRole.IsBoss() || killRole.CountAsBoss()) RoleColor = AHitmarkerPlugin.BossColor.Value;
+            }
+            switch (AHitmarkerPlugin.KillStart.Value)
+            {
+                case EKillStart.Weapon:
+                    Start = "<b>" + killWeaponName + "</b> ";
+                    break;
+                case EKillStart.WeaponRole:
+                    Start = "<b>" + killWeaponName + " <color=#" + ColorUtility.ToHtmlStringRGB(RoleColor) + ">" + RoleName + "</color></b> ";
+                    break;
+            }
+            switch (AHitmarkerPlugin.KillNameColor.Value)
+            {
+                case EKillNameColor.None:
+                    Name = (killPlayerSide == EPlayerSide.Savage ? killPlayerName.Transliterate() : killPlayerName) + " ";
+                    break;
+                case EKillNameColor.SingleColor:
+                    Name = "<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.KillNameSingleColor.Value) + ">" + (killPlayerSide == EPlayerSide.Savage ? killPlayerName.Transliterate() : killPlayerName) + "</color> ";
+                    break;
+                case EKillNameColor.Colored:
+                    Name = "<color=#" + ColorUtility.ToHtmlStringRGB(HitmarkerColor) + ">" + (killPlayerSide == EPlayerSide.Savage ? killPlayerName.Transliterate() : killPlayerName) + "</color> ";
+                    break;
+            }
+            if (killDistance > AHitmarkerPlugin.KillDistanceThreshold.Value && !(AHitmarkerPlugin.KillEnd.Value == EKillEnd.Distance || AHitmarkerPlugin.KillEnd.Value == EKillEnd.None))
+            {
+                End = "<b>" + ((int)killDistance) + "M</b>";
+            }
+            else
+            {
+                switch (AHitmarkerPlugin.KillEnd.Value)
+                {
+                    case EKillEnd.Bodypart:
+                        End = "<b>" + killBodyPart + "</b>";
+                        break;
+                    case EKillEnd.Role:
+                        End = "<b>" + "<color=#" + ColorUtility.ToHtmlStringRGB(RoleColor) + ">" + RoleName + "</color></b>";
+                        break;
+                    case EKillEnd.Experience:
+                        switch (killPlayerSide)
+                        {
+                            case EPlayerSide.Usec:
+                            case EPlayerSide.Bear:
+                                killExperience = 200;
+                                break;
+                            case EPlayerSide.Savage:
+                                switch (killRole)
+                                {
+                                    case WildSpawnType.sectantPriest:
+                                    case WildSpawnType.bossKilla:
+                                        killExperience = 1200;
+                                        break;
+                                    case WildSpawnType.bossKojaniy:
+                                        killExperience = 1100;
+                                        break;
+                                    case WildSpawnType.bossBully:
+                                    case WildSpawnType.bossGluhar:
+                                    case WildSpawnType.bossSanitar:
+                                    case WildSpawnType.bossTagilla:
+                                    case WildSpawnType.followerBigPipe:
+                                    case WildSpawnType.followerBirdEye:
+                                    case WildSpawnType.bossKnight:
+                                        killExperience = 1000;
+                                        break;
+                                    case WildSpawnType.sectantWarrior:
+                                        killExperience = 600;
+                                        break;
+                                    case WildSpawnType.followerSanitar:
+                                        killExperience = 325;
+                                        break;
+                                    case WildSpawnType.followerKojaniy:
+                                        killExperience = 300;
+                                        break;
+                                    case WildSpawnType.followerGluharSecurity:
+                                        killExperience = 275;
+                                        break;
+                                    case WildSpawnType.followerGluharAssault:
+                                        killExperience = 250;
+                                        break;
+                                    case WildSpawnType.followerGluharScout:
+                                    case WildSpawnType.followerGluharSnipe:
+                                    case WildSpawnType.followerBully:
+                                        killExperience = 200;
+                                        break;
+                                    case WildSpawnType.pmcBot:
+                                        killExperience = 500;
+                                        break;
+                                    case WildSpawnType.exUsec:
+                                        killExperience = 225;
+                                        break;
+                                    default:
+                                        killExperience = 100;
+                                        break;
+                                }
+                                break;
+                        }
+                        End = "<b>" + killExperience + "XP</b>";
+                        break;
+                    case EKillEnd.Distance:
+                        End = "<b>" + ((int)killDistance) + "M</b>";
+                        break;
+                    case EKillEnd.DamageType:
+                        End = "<b>" + lethalDamageType + "</b>";
+                        break;
+                }
+            }
+            GameObject TextGameObject = new GameObject("KillTextGameObject");
+            TextGameObject.transform.SetParent(killListGameObject.transform);
+            if (AHitmarkerPlugin.KillChildDirection.Value)
+            {
+                TextGameObject.transform.SetSiblingIndex(0);
+            }
+            AmandsAnimatedText TempAmandsAnimatedText = TextGameObject.AddComponent<AmandsAnimatedText>();
+            TempAmandsAnimatedText.text = Start + Name + End;
+            TempAmandsAnimatedText.color = AHitmarkerPlugin.KillTextColor.Value;
+            TempAmandsAnimatedText.fontSize = AHitmarkerPlugin.KillFontSize.Value;
+            TempAmandsAnimatedText.outlineWidth = AHitmarkerPlugin.KillFontOutline.Value;
+            if (AHitmarkerPlugin.KillFontUpperCase.Value)
+            {
+                TempAmandsAnimatedText.fontStyles = FontStyles.UpperCase;
+            }
+            TempAmandsAnimatedText.time = AHitmarkerPlugin.KillTime.Value;
+            TempAmandsAnimatedText.OpacitySpeed = AHitmarkerPlugin.KillOpacitySpeed.Value;
+            TempAmandsAnimatedText.textAlignmentOptions = AHitmarkerPlugin.KillTextAlignment.Value;
+            LastAmandsAnimatedText = TempAmandsAnimatedText;
+            Destroy(TextGameObject, AHitmarkerPlugin.KillTime.Value * 10);
         }
         public void ReloadFiles()
         {
@@ -417,98 +751,349 @@ namespace AmandsHitmarker
         {
             AHitmarkerPlugin.HitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
+            DebugMode = true;
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = BattleUIScreen != null;
         }
         public void HeadshotHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.HeadshotHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
-            lastHeadShots = -1;
+            DebugMode = true;
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Head;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = BattleUIScreen != null;
         }
         public void BleedHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.BleedHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastKills = -1;
+            DebugMode = true;
+            killRole = WildSpawnType.assault;
+            killPlayerSide = EPlayerSide.Savage;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.HeavyBleeding;
+            killHitmarker = BattleUIScreen != null;
+        }
+        public void PoisonHitmarkerDebug(object sender, EventArgs e)
+        {
+            AHitmarkerPlugin.PoisonHitmarkerDebug.Value = false;
+            DebugOffset = new Vector3(600, 0, 0);
+            DebugMode = true;
+            killRole = WildSpawnType.assault;
+            killPlayerSide = EPlayerSide.Savage;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.LethalToxin;
+            killHitmarker = BattleUIScreen != null;
         }
         public void ArmorHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.ArmorHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
-            lastCauseArmorDamage = -1;
+            DebugMode = true;
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = true;
+            armorHitmarker = BattleUIScreen != null;
         }
         public void UsecHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.UsecHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
-            lastKills = -1;
-            lastKilledUsec = -1;
+            DebugMode = true;
+            killRole = WildSpawnType.bossKnight;
+            killPlayerSide = EPlayerSide.Usec;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = BattleUIScreen != null;
+            killHitmarker = BattleUIScreen != null;
         }
         public void BearHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.BearHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
-            lastKills = -1;
-            lastKilledBear = -1;
+            DebugMode = true;
+            killRole = WildSpawnType.followerBigPipe;
+            killPlayerSide = EPlayerSide.Bear;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = BattleUIScreen != null;
+            killHitmarker = BattleUIScreen != null;
         }
         public void ScavHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.ScavHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
-            lastKills = -1;
-            lastKilledSavage = -1;
+            DebugMode = true;
+            killRole = WildSpawnType.assault;
+            killPlayerSide = EPlayerSide.Savage;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = BattleUIScreen != null;
+            killHitmarker = BattleUIScreen != null;
         }
         public void ThrowWeaponHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.ThrowWeaponHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
-            lastKills = -1;
-            lastKilledWithThrowWeapon = -1;
+            DebugMode = true;
+            killRole = WildSpawnType.assault;
+            killPlayerSide = EPlayerSide.Savage;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.GrenadeFragment;
+            hitmarker = BattleUIScreen != null;
+            killHitmarker = BattleUIScreen != null;
+        }
+        public void FollowerHitmarkerDebug(object sender, EventArgs e)
+        {
+            AHitmarkerPlugin.FollowerHitmarkerDebug.Value = false;
+            DebugOffset = new Vector3(600, 0, 0);
+            DebugMode = true;
+            killRole = WildSpawnType.followerBully;
+            killPlayerSide = EPlayerSide.Savage;
+            killExperience = 100;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = BattleUIScreen != null;
+            killHitmarker = BattleUIScreen != null;
         }
         public void BossHitmarkerDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.BossHitmarkerDebug.Value = false;
             DebugOffset = new Vector3(600, 0, 0);
-            lastHitCount = -1;
-            lastKills = -1;
-            lastKilledBoss = -1;
+            DebugMode = true;
+            killRole = WildSpawnType.bossKnight;
+            killPlayerSide = EPlayerSide.Savage;
+            killExperience = 100;
+            killDistance = 25;
+            killWeaponName = DebugWeapons.Random();
+            killPlayerName = DebugNames.Random();
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            hitmarker = BattleUIScreen != null;
+            killHitmarker = BattleUIScreen != null;
         }
         public void HitmarkerSoundDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.HitmarkerSoundDebug.Value = false;
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value))
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<GUISounds>.Instance.PlaySound(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value]);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public void HeadshotHitmarkerSoundDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.HeadshotHitmarkerSoundDebug.Value = false;
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value))
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<GUISounds>.Instance.PlaySound(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value]);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public void KillHitmarkerSoundDebug(object sender, EventArgs e)
         {
             AHitmarkerPlugin.KillHitmarkerSoundDebug.Value = false;
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<GUISounds>.Instance.PlaySound(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value]);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
-        public void DebugReloadFiles(object sender, EventArgs e)
+        public void ArmorSoundDebug(object sender, EventArgs e)
         {
-            if (AHitmarkerPlugin.ReloadFiles.Value)
+            AHitmarkerPlugin.ArmorSoundDebug.Value = false;
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                ReloadFiles();
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
+        public void ArmorBreakSoundDebug(object sender, EventArgs e)
+        {
+            AHitmarkerPlugin.ArmorBreakSoundDebug.Value = false;
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
+            {
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+            }
+        }
+        public void ReloadFilesDebug(object sender, EventArgs e)
+        {
+            AHitmarkerPlugin.ReloadFiles.Value = false;
+            ReloadFiles();
+        }
+        public void UpdateKillPreset(object sender, EventArgs e)
+        {
+            switch (AHitmarkerPlugin.KillPreset.Value)
+            {
+                case EKillPreset.Center:
+                    AHitmarkerPlugin.KillChildDirection.Value = true;
+                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2(0f, -250f);
+                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(0.5f, 1f);
+                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
+                    break;
+                case EKillPreset.TopLeft:
+                    AHitmarkerPlugin.KillChildDirection.Value = true;
+                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2(-((Screen.width / 2) - 30), 530f);
+                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(0.0f, 1f);
+                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Left;
+                    break;
+                case EKillPreset.TopRight:
+                    AHitmarkerPlugin.KillChildDirection.Value = true;
+                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2((Screen.width/2)-30, 530f);
+                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(1f, 1f);
+                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
+                    break;
+                case EKillPreset.BottomLeft:
+                    AHitmarkerPlugin.KillChildDirection.Value = false;
+                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2(-((Screen.width / 2) - 30), -280f);
+                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(0f, 0f);
+                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Left;
+                    break;
+                case EKillPreset.BottomRight:
+                    AHitmarkerPlugin.KillChildDirection.Value = false;
+                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2((Screen.width / 2) - 30, -420.0f);
+                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(1f, 0f);
+                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
+                    break;
+            }
+            if (rectTransform != null && verticalLayoutGroup != null)
+            {
+                rectTransform.localPosition = new Vector3(AHitmarkerPlugin.KillRectPosition.Value.x, AHitmarkerPlugin.KillRectPosition.Value.y, 0f);
+                rectTransform.pivot = AHitmarkerPlugin.KillRectPivot.Value;
+                verticalLayoutGroup.spacing = AHitmarkerPlugin.KillChildSpacing.Value;
+            }
+        }
+        public void UpdateKillfeed(object sender, EventArgs e)
+        {
+            if (rectTransform != null && verticalLayoutGroup != null)
+            {
+                rectTransform.localPosition = new Vector3(AHitmarkerPlugin.KillRectPosition.Value.x, AHitmarkerPlugin.KillRectPosition.Value.y, 0f);
+                rectTransform.pivot = AHitmarkerPlugin.KillRectPivot.Value;
+                verticalLayoutGroup.spacing = AHitmarkerPlugin.KillChildSpacing.Value;
+            }
+        }
+        public void ReloadBattleUIScreen(object sender, EventArgs e)
+        {
+            AHitmarkerPlugin.ReloadBattleUIScreen.Value = false;
+            BattleUIScreen = null;
+            UpdateInterval = 500;
+        }
+    }
+    public class AmandsAnimatedText : MonoBehaviour
+    {
+        public TMP_Text tMP_Text;
+        public string text;
+        public Color color = new Color(0.84f, 0.88f, 0.95f, 1f);
+        public int fontSize = 26;
+        public float outlineWidth = 0.01f;
+        public FontStyles fontStyles = FontStyles.SmallCaps;
+        public TextAlignmentOptions textAlignmentOptions = TextAlignmentOptions.Right;
+        public float time = 2f;
+        public float OpacitySpeed = 0.08f;
+        public bool EnableWaitAndStart = true;
+        private float Opacity = 1f;
+        private bool UpdateOpacity = false;
+
+        public void Start()
+        {
+            tMP_Text = gameObject.AddComponent<TextMeshProUGUI>();
+            tMP_Text.text = text;
+            tMP_Text.color = color;
+            tMP_Text.fontSize = fontSize;
+            tMP_Text.outlineWidth = outlineWidth;
+            tMP_Text.fontStyle = fontStyles;
+            tMP_Text.alignment = textAlignmentOptions;
+            if (tMP_Text != null)
+            {
+                if (EnableWaitAndStart)
+                {
+                    WaitAndStart();
+                }
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+        private async void WaitAndStart()
+        {
+            await Task.Delay((int)(Math.Min(20f, time) * 1000));
+            UpdateOpacity = true;
+        }
+        public void Update()
+        {
+            if (UpdateOpacity)
+            {
+                Opacity -= Math.Max(0.01f, OpacitySpeed);
+                tMP_Text.alpha = Opacity;
+                if (Opacity < 0)
+                {
+                    UpdateOpacity = false;
+                    if (this == AmandsHitmarkerClass.LastAmandsAnimatedText)
+                    {
+                        AmandsHitmarkerClass.killListGameObject.DestroyAllChildren();
+                    }
+                }
+            }
+        }
+    }
+
+    public enum EKillStart
+    {
+        None,
+        Weapon,
+        WeaponRole
+    }
+    public enum EKillNameColor
+    {
+        None,
+        SingleColor,
+        Colored
+    }
+    public enum EKillEnd
+    {
+        None,
+        Bodypart,
+        Role,
+        Experience,
+        Distance,
+        DamageType
+    }
+    public enum EKillPreset
+    {
+        Center,
+        TopRight,
+        BottomRight,
+        TopLeft,
+        BottomLeft,
+    }
+    public enum EHitmarkerPositionMode
+    {
+        Center,
+        GunDirection,
+        ImpactPoint,
+        ImpactPointStatic
     }
 }
