@@ -2,15 +2,15 @@ using BepInEx;
 using BepInEx.Configuration;
 using EFT;
 using EFT.InventoryLogic;
-using System.Collections.Generic;
 using System.Reflection;
 using Aki.Reflection.Patching;
 using UnityEngine;
 using TMPro;
+using HarmonyLib;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.0.0")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.1.0")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -20,8 +20,9 @@ namespace AmandsHitmarker
         public static ConfigEntry<EHitmarkerPositionMode> ADSHitmarkerPositionMode { get; set; }
         public static ConfigEntry<Vector2> Thickness { get; set; }
         public static ConfigEntry<float> CenterOffset { get; set; }
-        public static ConfigEntry<float> OffsetSpeed { get; set; }
-        public static ConfigEntry<float> OpacitySpeed { get; set; }
+        public static ConfigEntry<float> AnimatedTime { get; set; }
+        public static ConfigEntry<float> AnimatedAlphaTime { get; set; }
+        public static ConfigEntry<float> AnimatedAmplitude { get; set; }
         public static ConfigEntry<string> Shape { get; set; }
         public static ConfigEntry<string> HeadshotShape { get; set; }
         public static ConfigEntry<Vector2> BleedSize { get; set; }
@@ -96,10 +97,6 @@ namespace AmandsHitmarker
         }
         private void Start()
         {
-            new AmandsDamagePatch().Enable();
-            new AmandsArmorDamagePatch().Enable();
-            new AmandsKillPatch().Enable();
-
             EnableHitmarker = Config.Bind<bool>("AmandsHitmarker", "EnableHitmarker", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 420 }));
             EnableBleeding = Config.Bind<bool>("AmandsHitmarker", "EnableBleeding", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 410 }));
 
@@ -108,8 +105,9 @@ namespace AmandsHitmarker
 
             Thickness = Config.Bind<Vector2>("AmandsHitmarker", "Thickness", new Vector2(40.0f, 40.0f), new ConfigDescription("Individual image size", null, new ConfigurationManagerAttributes { Order = 210 }));
             CenterOffset = Config.Bind<float>("AmandsHitmarker", "CenterOffset", 15.0f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 200 }));
-            OffsetSpeed = Config.Bind<float>("AmandsHitmarker", "OffsetSpeed", 0.05f, new ConfigDescription("Animation size increase", null, new ConfigurationManagerAttributes { Order = 190 }));
-            OpacitySpeed = Config.Bind<float>("AmandsHitmarker", "OpacitySpeed", 0.05f, new ConfigDescription("Animation opacity decrease", null, new ConfigurationManagerAttributes { Order = 180 }));
+            AnimatedTime = Config.Bind<float>("AmandsHitmarker", "AnimatedTime", 0.25f, new ConfigDescription("Animation time duration", new AcceptableValueRange<float>(0.01f, 1.0f), new ConfigurationManagerAttributes { Order = 190 }));
+            AnimatedAlphaTime = Config.Bind<float>("AmandsHitmarker", "AnimatedAlphaTime", 0.25f, new ConfigDescription("Alpha animation time duration", new AcceptableValueRange<float>(0.01f, 1.0f), new ConfigurationManagerAttributes { Order = 180 }));
+            AnimatedAmplitude = Config.Bind<float>("AmandsHitmarker", "AnimatedAmplitude", 2.5f, new ConfigDescription("Animation size amplitude", new AcceptableValueRange<float>(1.0f, 10.0f), new ConfigurationManagerAttributes { Order = 178 }));
             Shape = Config.Bind<string>("AmandsHitmarker", "Shape", "Hitmarker.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 170 }));
             HeadshotShape = Config.Bind<string>("AmandsHitmarker", "HeadshotShape", "HeadshotHitmarker.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 160 }));
             BleedSize = Config.Bind<Vector2>("AmandsHitmarker", "BleedSize", new Vector2(128.0f, 128.0f), new ConfigDescription("Bleed kill glow image size", null, new ConfigurationManagerAttributes { Order = 150 }));
@@ -152,7 +150,7 @@ namespace AmandsHitmarker
             ReloadBattleUIScreen = Config.Bind<bool>("Debug", "ReloadBattleUIScreen", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 100, IsAdvanced = true }));
 
             StaticHitmarkerOnly = Config.Bind<bool>("Static", "StaticHitmarkerOnly", false, new ConfigDescription("Use only the static hitmarker image", null, new ConfigurationManagerAttributes { Order = 140, IsAdvanced = true }));
-            StaticSizeDelta = Config.Bind<Vector2>("Static", "StaticSizeDelta", new Vector2(40.0f, 40.0f), new ConfigDescription("Static hitmarker size", null, new ConfigurationManagerAttributes { Order = 130, IsAdvanced = true }));
+            StaticSizeDelta = Config.Bind<Vector2>("Static", "StaticSizeDelta", new Vector2(200.0f, 200.0f), new ConfigDescription("Static hitmarker size", null, new ConfigurationManagerAttributes { Order = 130, IsAdvanced = true }));
             StaticSizeDeltaSpeed = Config.Bind<float>("Static", "StaticSizeDeltaSpeed", 0.01f, new ConfigDescription("Animation size increase", null, new ConfigurationManagerAttributes { Order = 120, IsAdvanced = true }));
             StaticOpacity = Config.Bind<float>("Static", "StaticOpacity", 0.25f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
 
@@ -176,6 +174,12 @@ namespace AmandsHitmarker
             KillNameSingleColor = Config.Bind<Color>("AmandsKillfeed", "SingleColor", new Color(1.0f, 0.0f, 0.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130, IsAdvanced = true }));
             KillEnd = Config.Bind<EKillEnd>("AmandsKillfeed", "End", EKillEnd.Experience, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120 }));
             KillDistanceThreshold = Config.Bind<int>("AmandsKillfeed", "DistanceThreshold", 50, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110 }));
+
+            new AmandsDamagePatch().Enable();
+            new AmandsArmorDamagePatch().Enable();
+            new AmandsKillPatch().Enable();
+
+            AmandsHitmarkerHelper.Init();
         }
     }
     public class AmandsDamagePatch : ModulePatch
@@ -230,13 +234,13 @@ namespace AmandsHitmarker
                 AmandsHitmarkerClass.killHitmarker = true;
                 AmandsHitmarkerClass.killDamageInfo = damageInfo;
                 AmandsHitmarkerClass.killBodyPart = bodyPart;
-                AmandsHitmarkerClass.killRole = __instance.Profile.Info.Settings.Role;
+                AmandsHitmarkerClass.killRole = Traverse.Create(Traverse.Create(__instance.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>();
                 AmandsHitmarkerClass.killPlayerName = __instance.Profile.Nickname;
-                AmandsHitmarkerClass.killExperience = __instance.Profile.Info.Settings.Experience;
                 AmandsHitmarkerClass.killPlayerSide = __instance.Side;
                 AmandsHitmarkerClass.killDistance = Vector3.Distance(aggressor.Position, __instance.Position);
                 AmandsHitmarkerClass.lethalDamageType = lethalDamageType;
-                AmandsHitmarkerClass.killWeaponName = damageInfo.Weapon.LocalizedShortName();
+                AmandsHitmarkerClass.killLevel = __instance.Profile.Info.Level;
+                AmandsHitmarkerClass.killWeaponName = AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName,0);
             }
         }
     }
