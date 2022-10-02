@@ -46,6 +46,9 @@ namespace AmandsHitmarker
         public static GameObject PlayerSuperior;
         public static FirearmController firearmController;
         public static LocalPlayer localPlayer;
+        private static GameObject FPSCamera;
+        private static SSAA FPSCameraSSAA;
+        private static float FPSCameraSSAARatio;
         private static GameObject TLH;
         private static GameObject TRH;
         private static GameObject BLH;
@@ -333,7 +336,12 @@ namespace AmandsHitmarker
                     }
                     if (Camera.main != null)
                     {
-                        Vector2 ScreenPointSnapshot = Camera.main.WorldToScreenPoint(damageInfo.HitPoint);
+                        FPSCameraSSAARatio = 1f;
+                        if (FPSCameraSSAA != null && (FPSCameraSSAA.UsesDLSSUpscaler() || FPSCameraSSAA.UsesFSRUpscaler()))
+                        {
+                            FPSCameraSSAARatio = (float)FPSCameraSSAA.GetOutputHeight() / (float)FPSCameraSSAA.GetInputHeight();
+                        }
+                        Vector2 ScreenPointSnapshot = Camera.main.WorldToScreenPoint(damageInfo.HitPoint) * FPSCameraSSAARatio;
                         HitmarkerPositionSnapshot = new Vector2(ScreenPointSnapshot.x - (Screen.width / 2), ScreenPointSnapshot.y - (Screen.height / 2));
                     }
                     TLHImage.sprite = sprite; TRHImage.sprite = sprite;
@@ -372,11 +380,11 @@ namespace AmandsHitmarker
                             position = firearmController.CurrentFireport.position;
                             weaponDirection = firearmController.WeaponDirection;
                             firearmController.AdjustShotVectors(ref position, ref weaponDirection);
-                            Vector2 ScreenPoint = Camera.main.WorldToScreenPoint(position + (weaponDirection * 100));
+                            Vector2 ScreenPoint = Camera.main.WorldToScreenPoint(position + (weaponDirection * 100)) * FPSCameraSSAARatio;
                             HitmarkerPosition = new Vector2(ScreenPoint.x - (Screen.width / 2), ScreenPoint.y - (Screen.height / 2));
                             break;
                         case EHitmarkerPositionMode.ImpactPoint:
-                            Vector2 ScreenPoint2 = Camera.main.WorldToScreenPoint(damageInfo.HitPoint);
+                            Vector2 ScreenPoint2 = Camera.main.WorldToScreenPoint(damageInfo.HitPoint) * FPSCameraSSAARatio;
                             HitmarkerPosition = new Vector2(ScreenPoint2.x - (Screen.width / 2), ScreenPoint2.y - (Screen.height / 2));
                             break;
                         case EHitmarkerPositionMode.ImpactPointStatic:
@@ -519,6 +527,17 @@ namespace AmandsHitmarker
                     if (localPlayer != null)
                     {
                         PlayerSuperior = localPlayer.gameObject;
+                    }
+                }
+                if (FPSCameraSSAA == null)
+                {
+                    if (FPSCamera == null)
+                    {
+                        FPSCamera = GameObject.Find("FPS Camera");
+                    }
+                    if (FPSCamera != null)
+                    {
+                        FPSCameraSSAA = FPSCamera.GetComponent<SSAA>();
                     }
                 }
             }
