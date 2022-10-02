@@ -10,7 +10,7 @@ using HarmonyLib;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.1.0")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.1.1")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
