@@ -20,8 +20,8 @@ namespace AmandsHitmarker
         public static DamageInfo damageInfo = new DamageInfo();
         public static EBodyPart bodyPart = EBodyPart.Chest;
         public static bool armorHitmarker;
-        public static float armorDamage;
-        public static DamageInfo armorDamageInfo;
+        //public static float armorDamage;
+        //public static DamageInfo armorDamageInfo;
         public static bool armorBreak;
         public static bool killHitmarker;
         public static DamageInfo killDamageInfo = new DamageInfo();
@@ -75,6 +75,9 @@ namespace AmandsHitmarker
         private static GameObject StaticHitmarker;
         private static Image StaticHitmarkerImage;
         private static RectTransform StaticHitmarkerRect;
+        private static GameObject ArmorHitmarker;
+        private static Image ArmorHitmarkerImage;
+        private static RectTransform ArmorHitmarkerRect;
         private static bool ForceHitmarkerPosition = false;
         private static Vector3 HitmarkerPosition = Vector3.zero;
         private static Vector3 HitmarkerPositionSnapshot = Vector3.zero;
@@ -88,6 +91,7 @@ namespace AmandsHitmarker
         private static Color HitmarkerColor = new Color(1.0f, 1.0f, 1.0f);
         private static Color BleedColor = new Color(1.0f, 0.0f, 0.0f);
         private static AudioClip audioClip;
+        private static Color ArmorHitmarkerColor = new Color(1.0f, 1.0f, 1.0f);
 
         private static bool DebugMode = false;
         private static Vector3 DebugOffset = Vector3.zero;
@@ -106,9 +110,12 @@ namespace AmandsHitmarker
             AlphaAnimationCurve.keys = AlphaKeys;
 
             AHitmarkerPlugin.EnableHitmarker.SettingChanged += HitmarkerDebug;
+            AHitmarkerPlugin.EnableArmorHitmarker.SettingChanged += ArmorHitmarkerDebug;
             AHitmarkerPlugin.EnableBleeding.SettingChanged += BleedHitmarkerDebug;
             AHitmarkerPlugin.Thickness.SettingChanged += HitmarkerDebug;
             AHitmarkerPlugin.CenterOffset.SettingChanged += HitmarkerDebug;
+            AHitmarkerPlugin.ArmorOffset.SettingChanged += ArmorHitmarkerDebug;
+            AHitmarkerPlugin.ArmorSizeDelta.SettingChanged += ArmorHitmarkerDebug;
             AHitmarkerPlugin.AnimatedTime.SettingChanged += UpdateHitmarkerAnimation;
             AHitmarkerPlugin.AnimatedAlphaTime.SettingChanged += UpdateHitmarkerAnimation;
             AHitmarkerPlugin.AnimatedAmplitude.SettingChanged += UpdateHitmarkerAnimation;
@@ -130,6 +137,7 @@ namespace AmandsHitmarker
             AHitmarkerPlugin.BleedHitmarkerDebug.SettingChanged += BleedHitmarkerDebug;
             AHitmarkerPlugin.PoisonHitmarkerDebug.SettingChanged += PoisonHitmarkerDebug;
             AHitmarkerPlugin.ArmorHitmarkerDebug.SettingChanged += ArmorHitmarkerDebug;
+            AHitmarkerPlugin.ArmorBreakHitmarkerDebug.SettingChanged += ArmorBreakHitmarkerDebug;
             AHitmarkerPlugin.BearHitmarkerDebug.SettingChanged += BearHitmarkerDebug;
             AHitmarkerPlugin.UsecHitmarkerDebug.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.ScavHitmarkerDebug.SettingChanged += ScavHitmarkerDebug;
@@ -186,7 +194,7 @@ namespace AmandsHitmarker
 
         public void Update()
         {
-            if (hitmarker || armorHitmarker || killHitmarker && ActiveUIScreen != null)
+            if (hitmarker || killHitmarker && ActiveUIScreen != null)
             {
                 ForceHitmarkerPosition = false;
                 bool tmpHitmarker = hitmarker;
@@ -234,9 +242,24 @@ namespace AmandsHitmarker
                             break;
                     }
                 }
-                if (tmpArmorHitmarker)
+                ArmorHitmarkerColor = Color.clear;
+                if (tmpArmorHitmarker && !tmpKillHitmarker)
                 {
                     HitmarkerColor = AHitmarkerPlugin.ArmorColor.Value;
+                    if (AHitmarkerPlugin.EnableArmorHitmarker.Value != EArmorHitmarker.Disabled)
+                    {
+                        if (tmpArmorBreak)
+                        {
+                            ArmorHitmarkerColor = AHitmarkerPlugin.ArmorColor.Value;
+                            ArmorHitmarkerImage.sprite = LoadedSprites[AHitmarkerPlugin.ArmorBreakShape.Value];
+                        }
+                        else if (AHitmarkerPlugin.EnableArmorHitmarker.Value != EArmorHitmarker.BreakingOnly)
+                        {
+                            ArmorHitmarkerColor = AHitmarkerPlugin.HitmarkerColor.Value;
+                            ArmorHitmarkerImage.sprite = LoadedSprites[AHitmarkerPlugin.ArmorShape.Value];
+                        }
+                        ArmorHitmarkerRect.sizeDelta = AHitmarkerPlugin.ArmorSizeDelta.Value;
+                    }
                     if (tmpArmorBreak && AHitmarkerPlugin.EnableSounds.Value && !DebugMode)
                     {
                         audioClip = LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value];
@@ -400,6 +423,8 @@ namespace AmandsHitmarker
                     TLHImage.color = Color.clear; TRHImage.color = Color.clear; 
                     BLHImage.color = Color.clear; BRHImage.color = Color.clear;
                     BleedImage.color = new Color(BleedColor.r, BleedColor.g, BleedColor.b, BleedColor.a * HitmarkerOpacity);
+                    ArmorHitmarkerRect.localPosition = DebugOffset + HitmarkerPosition + AHitmarkerPlugin.ArmorOffset.Value;
+                    ArmorHitmarkerImage.color = new Color(ArmorHitmarkerColor.r, ArmorHitmarkerColor.g, ArmorHitmarkerColor.b, ArmorHitmarkerColor.a * HitmarkerOpacity);
                 }
                 else
                 {
@@ -418,6 +443,8 @@ namespace AmandsHitmarker
                     TLHImage.color = ImageColor; TRHImage.color = ImageColor; 
                     BLHImage.color = ImageColor; BRHImage.color = ImageColor;
                     BleedImage.color = new Color(BleedColor.r, BleedColor.g, BleedColor.b, BleedColor.a * HitmarkerOpacity);
+                    ArmorHitmarkerRect.localPosition = DebugOffset + HitmarkerPosition + AHitmarkerPlugin.ArmorOffset.Value;
+                    ArmorHitmarkerImage.color = new Color(ArmorHitmarkerColor.r, ArmorHitmarkerColor.g, ArmorHitmarkerColor.b, ArmorHitmarkerColor.a * HitmarkerOpacity);
                     StaticHitmarkerImage.color = new Color(HitmarkerColor.r, HitmarkerColor.g, HitmarkerColor.b, HitmarkerColor.a * HitmarkerOpacity * AHitmarkerPlugin.StaticOpacity.Value);
                 }
                 if (HitmarkerTime > (AHitmarkerPlugin.AnimatedTime.Value + AHitmarkerPlugin.AnimatedAlphaTime.Value))
@@ -461,6 +488,15 @@ namespace AmandsHitmarker
                         contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                         rectTransform.localPosition = new Vector3(AHitmarkerPlugin.KillRectPosition.Value.x, AHitmarkerPlugin.KillRectPosition.Value.y, 0f);
                         rectTransform.pivot = AHitmarkerPlugin.KillRectPivot.Value;
+
+                        if (ArmorHitmarker != null) Destroy(ArmorHitmarker);
+                        ArmorHitmarker = new GameObject("ArmorHitmarker");
+                        ArmorHitmarkerRect = ArmorHitmarker.AddComponent<RectTransform>();
+                        ArmorHitmarkerImage = ArmorHitmarker.AddComponent<Image>();
+                        ArmorHitmarker.transform.SetParent(ActiveUIScreen.transform);
+                        ArmorHitmarkerImage.sprite = LoadedSprites[AHitmarkerPlugin.ArmorShape.Value];
+                        ArmorHitmarkerImage.raycastTarget = false;
+                        ArmorHitmarkerImage.color = Color.clear;
 
                         if (BleedHitmarker != null) Destroy(BleedHitmarker);
                         BleedHitmarker = new GameObject("BleedHitmarker");
@@ -636,7 +672,7 @@ namespace AmandsHitmarker
             else
             {
                 EKillEnd killEnd = AHitmarkerPlugin.KillEnd.Value;
-                if (killPlayerSide == EPlayerSide.Savage) killEnd = EKillEnd.Experience;
+                if (killEnd == EKillEnd.Level && killPlayerSide == EPlayerSide.Savage) killEnd = EKillEnd.Experience;
                 switch (killEnd)
                 {
                     case EKillEnd.Bodypart:
@@ -875,6 +911,20 @@ namespace AmandsHitmarker
             killLevel = 1;
             hitmarker = true;
             armorHitmarker = ActiveUIScreen != null;
+        }
+        public void ArmorBreakHitmarkerDebug(object sender, EventArgs e)
+        {
+            AHitmarkerPlugin.ArmorBreakHitmarkerDebug.Value = false;
+            DebugOffset = new Vector3(600, 0, 0);
+            DebugMode = true;
+            System.Random rnd = new System.Random();
+            killPlayerName = DebugNames[rnd.Next(DebugNames.Count)];
+            bodyPart = EBodyPart.Chest;
+            lethalDamageType = EDamageType.Bullet;
+            killLevel = 1;
+            hitmarker = true;
+            armorHitmarker = ActiveUIScreen != null;
+            armorBreak = ActiveUIScreen != null;
         }
         public void UsecHitmarkerDebug(object sender, EventArgs e)
         {
@@ -1150,6 +1200,12 @@ namespace AmandsHitmarker
                 tMP_Text.alpha = StartOpacity;
             }
         }
+    }
+    public enum EArmorHitmarker
+    {
+        Disabled,
+        Enabled,
+        BreakingOnly
     }
     public enum EKillStart
     {
