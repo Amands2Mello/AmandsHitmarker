@@ -10,21 +10,26 @@ using HarmonyLib;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.1.1")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.2.0")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
         public static ConfigEntry<bool> EnableHitmarker { get; set; }
+        public static ConfigEntry<EArmorHitmarker> EnableArmorHitmarker { get; set; }
         public static ConfigEntry<bool> EnableBleeding { get; set; }
         public static ConfigEntry<EHitmarkerPositionMode> HitmarkerPositionMode { get; set; }
         public static ConfigEntry<EHitmarkerPositionMode> ADSHitmarkerPositionMode { get; set; }
         public static ConfigEntry<Vector2> Thickness { get; set; }
         public static ConfigEntry<float> CenterOffset { get; set; }
+        public static ConfigEntry<Vector3> ArmorOffset { get; set; }
+        public static ConfigEntry<Vector2> ArmorSizeDelta { get; set; }
         public static ConfigEntry<float> AnimatedTime { get; set; }
         public static ConfigEntry<float> AnimatedAlphaTime { get; set; }
         public static ConfigEntry<float> AnimatedAmplitude { get; set; }
         public static ConfigEntry<string> Shape { get; set; }
         public static ConfigEntry<string> HeadshotShape { get; set; }
+        public static ConfigEntry<string> ArmorShape { get; set; }
+        public static ConfigEntry<string> ArmorBreakShape { get; set; }
         public static ConfigEntry<Vector2> BleedSize { get; set; }
 
         public static ConfigEntry<bool> EnableSounds { get; set; }
@@ -51,6 +56,7 @@ namespace AmandsHitmarker
         public static ConfigEntry<bool> BleedHitmarkerDebug { get; set; }
         public static ConfigEntry<bool> PoisonHitmarkerDebug { get; set; }
         public static ConfigEntry<bool> ArmorHitmarkerDebug { get; set; }
+        public static ConfigEntry<bool> ArmorBreakHitmarkerDebug { get; set; }
         public static ConfigEntry<bool> UsecHitmarkerDebug { get; set; }
         public static ConfigEntry<bool> BearHitmarkerDebug { get; set; }
         public static ConfigEntry<bool> ScavHitmarkerDebug { get; set; }
@@ -98,6 +104,7 @@ namespace AmandsHitmarker
         private void Start()
         {
             EnableHitmarker = Config.Bind<bool>("AmandsHitmarker", "EnableHitmarker", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 420 }));
+            EnableArmorHitmarker = Config.Bind<EArmorHitmarker>("AmandsHitmarker", "EnableArmorHitmarker", EArmorHitmarker.BreakingOnly, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 414 }));
             EnableBleeding = Config.Bind<bool>("AmandsHitmarker", "EnableBleeding", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 410 }));
 
             HitmarkerPositionMode = Config.Bind<EHitmarkerPositionMode>("AmandsHitmarker", "Position Mode", EHitmarkerPositionMode.ImpactPoint, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 320 }));
@@ -105,11 +112,15 @@ namespace AmandsHitmarker
 
             Thickness = Config.Bind<Vector2>("AmandsHitmarker", "Thickness", new Vector2(40.0f, 40.0f), new ConfigDescription("Individual image size", null, new ConfigurationManagerAttributes { Order = 210 }));
             CenterOffset = Config.Bind<float>("AmandsHitmarker", "CenterOffset", 15.0f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 200 }));
+            ArmorOffset = Config.Bind<Vector3>("AmandsHitmarker", "ArmorOffset", new Vector3(70.0f, 0.0f, 0.0f), new ConfigDescription("Armor shape offset", null, new ConfigurationManagerAttributes { Order = 198, IsAdvanced = true }));
+            ArmorSizeDelta = Config.Bind<Vector2>("AmandsHitmarker", "ArmorSizeDelta", new Vector2(64.0f, 64.0f), new ConfigDescription("Armor shape size delta", null, new ConfigurationManagerAttributes { Order = 196, IsAdvanced = true }));
             AnimatedTime = Config.Bind<float>("AmandsHitmarker", "AnimatedTime", 0.25f, new ConfigDescription("Animation time duration", new AcceptableValueRange<float>(0.01f, 1.0f), new ConfigurationManagerAttributes { Order = 190 }));
             AnimatedAlphaTime = Config.Bind<float>("AmandsHitmarker", "AnimatedAlphaTime", 0.25f, new ConfigDescription("Alpha animation time duration", new AcceptableValueRange<float>(0.01f, 1.0f), new ConfigurationManagerAttributes { Order = 180 }));
             AnimatedAmplitude = Config.Bind<float>("AmandsHitmarker", "AnimatedAmplitude", 2.5f, new ConfigDescription("Animation size amplitude", new AcceptableValueRange<float>(1.0f, 10.0f), new ConfigurationManagerAttributes { Order = 178 }));
             Shape = Config.Bind<string>("AmandsHitmarker", "Shape", "Hitmarker.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 170 }));
             HeadshotShape = Config.Bind<string>("AmandsHitmarker", "HeadshotShape", "HeadshotHitmarker.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 160 }));
+            ArmorShape = Config.Bind<string>("AmandsHitmarker", "ArmorShape", "Armor.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 158 }));
+            ArmorBreakShape = Config.Bind<string>("AmandsHitmarker", "ArmorBreakShape", "ArmorBreak.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 154 }));
             BleedSize = Config.Bind<Vector2>("AmandsHitmarker", "BleedSize", new Vector2(128.0f, 128.0f), new ConfigDescription("Bleed kill glow image size", null, new ConfigurationManagerAttributes { Order = 150 }));
             EnableSounds = Config.Bind<bool>("AmandsHitmarker", "EnableSounds", true, new ConfigDescription("Supported Files WAV OGG", null, new ConfigurationManagerAttributes { Order = 140 }));
             SoundVolume = Config.Bind<float>("AmandsHitmarker", "SoundVolume", 1.0f, new ConfigDescription("", new AcceptableValueRange<float>(0.0f,4.0f), new ConfigurationManagerAttributes { Order = 136 }));
@@ -135,6 +146,7 @@ namespace AmandsHitmarker
             BleedHitmarkerDebug = Config.Bind<bool>("Debug", "BleedHitmarkerDebug", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 210, IsAdvanced = true }));
             PoisonHitmarkerDebug = Config.Bind<bool>("Debug", "PoisonHitmarkerDebug", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 208, IsAdvanced = true }));
             ArmorHitmarkerDebug = Config.Bind<bool>("Debug", "ArmorHitmarkerDebug", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 200, IsAdvanced = true }));
+            ArmorBreakHitmarkerDebug = Config.Bind<bool>("Debug", "ArmorBreakHitmarkerDebug", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 196, IsAdvanced = true }));
             BearHitmarkerDebug = Config.Bind<bool>("Debug", "BearHitmarkerDebug", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 190, IsAdvanced = true }));
             UsecHitmarkerDebug = Config.Bind<bool>("Debug", "UsecHitmarkerDebug", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 180, IsAdvanced = true }));
             ScavHitmarkerDebug = Config.Bind<bool>("Debug", "ScavHitmarkerDebug", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 170, IsAdvanced = true }));
@@ -197,22 +209,24 @@ namespace AmandsHitmarker
                 AmandsHitmarkerClass.damageInfo = damageInfo;
                 AmandsHitmarkerClass.bodyPart = bodyPartType;
             }
+            if (AmandsHitmarkerClass.localPlayer != null && __instance == AmandsHitmarkerClass.localPlayer)
+            {
+                AmandsHitmarkerClass.armorHitmarker = false;
+            }
         }
     }
     public class AmandsArmorDamagePatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(ArmorComponent).GetMethod("ApplyDamage", BindingFlags.Instance | BindingFlags.Public);
+            return typeof(ArmorComponent).GetMethod("ApplyDurabilityDamage", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPostfix]
-        private static void PatchPostFix(ref ArmorComponent __instance, DamageInfo damageInfo, float armorDamage)
+        private static void PatchPostFix(ref ArmorComponent __instance, float armorDamage)
         {
-            if (AmandsHitmarkerClass.localPlayer != null && damageInfo.Player == AmandsHitmarkerClass.localPlayer && armorDamage > 0)
+            if (armorDamage > 0)
             {
                 AmandsHitmarkerClass.armorHitmarker = true;
-                AmandsHitmarkerClass.armorDamage = armorDamage;
-                AmandsHitmarkerClass.armorDamageInfo = damageInfo;
                 if (__instance.Repairable.Durability == 0)
                 {
                     AmandsHitmarkerClass.armorBreak = true;
