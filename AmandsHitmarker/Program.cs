@@ -7,13 +7,16 @@ using Aki.Reflection.Patching;
 using UnityEngine;
 using TMPro;
 using HarmonyLib;
+using GPUInstancer;
+using System.Threading.Tasks;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.2.0")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.3.0")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
+        public static AmandsHitmarkerClass AmandsHitmarkerClassComponent;
         public static ConfigEntry<bool> EnableHitmarker { get; set; }
         public static ConfigEntry<EArmorHitmarker> EnableArmorHitmarker { get; set; }
         public static ConfigEntry<bool> EnableBleeding { get; set; }
@@ -89,16 +92,18 @@ namespace AmandsHitmarker
         public static ConfigEntry<float> KillTime { get; set; }
         public static ConfigEntry<float> KillOpacitySpeed { get; set; }
         public static ConfigEntry<bool> KillUpperText { get; set; }
+        public static ConfigEntry<EHeadshotXP> KillHeadshotXP { get; set; }
         public static ConfigEntry<EKillStart> KillStart { get; set; }
         public static ConfigEntry<EKillNameColor> KillNameColor { get; set; }
         public static ConfigEntry<Color> KillNameSingleColor { get; set; }
         public static ConfigEntry<EKillEnd> KillEnd { get; set; }
+        public static ConfigEntry<bool> KillStreakXP { get; set; }
         public static ConfigEntry<int> KillDistanceThreshold { get; set; }
         private void Awake()
         {
             Debug.LogError("AmandsHitmarker Awake()");
             Hook = new GameObject();
-            Hook.AddComponent<AmandsHitmarkerClass>();
+            AmandsHitmarkerClassComponent = Hook.AddComponent<AmandsHitmarkerClass>();
             DontDestroyOnLoad(Hook);
         }
         private void Start()
@@ -181,17 +186,83 @@ namespace AmandsHitmarker
             KillTime = Config.Bind<float>("AmandsKillfeed", "Time", 2f, new ConfigDescription("", new AcceptableValueRange<float>(0.1f, 20.0f), new ConfigurationManagerAttributes { Order = 180 }));
             KillOpacitySpeed = Config.Bind<float>("AmandsKillfeed", "OpacitySpeed", 0.08f, new ConfigDescription("", new AcceptableValueRange<float>(0.01f,1.0f), new ConfigurationManagerAttributes { Order = 170 }));
             KillUpperText = Config.Bind<bool>("AmandsKillfeed", "EnableUpperText", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 160, IsAdvanced = true }));
+            KillHeadshotXP = Config.Bind<EHeadshotXP>("AmandsKillfeed", "Headshot XP", EHeadshotXP.On, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 158 }));
             KillStart = Config.Bind<EKillStart>("AmandsKillfeed", "Start", EKillStart.Weapon, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 150 }));
             KillNameColor = Config.Bind<EKillNameColor>("AmandsKillfeed", "Name", EKillNameColor.Colored, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 140}));
             KillNameSingleColor = Config.Bind<Color>("AmandsKillfeed", "SingleColor", new Color(1.0f, 0.0f, 0.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130, IsAdvanced = true }));
             KillEnd = Config.Bind<EKillEnd>("AmandsKillfeed", "End", EKillEnd.Experience, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120 }));
+            KillStreakXP = Config.Bind<bool>("AmandsKillfeed", "Streak XP", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 118 }));
             KillDistanceThreshold = Config.Bind<int>("AmandsKillfeed", "DistanceThreshold", 50, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110 }));
 
             new AmandsDamagePatch().Enable();
             new AmandsArmorDamagePatch().Enable();
             new AmandsKillPatch().Enable();
+            new AmandsLocalPlayerPatch().Enable();
+            new AmandsMenuUIPatch().Enable();
+            new AmandsBattleUIScreenPatch().Enable();
+            new AmandsSSAAPatch().Enable();
 
             AmandsHitmarkerHelper.Init();
+        }
+    }
+    public class AmandsLocalPlayerPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return typeof(LocalPlayer).GetMethod("Create", BindingFlags.Static | BindingFlags.Public);
+        }
+        [PatchPostfix]
+        private static void PatchPostFix(ref Task<LocalPlayer> __result)
+        {
+            LocalPlayer localPlayer = __result.Result;
+            if (localPlayer != null && localPlayer.IsYourPlayer)
+            {
+                AmandsHitmarkerClass.localPlayer = localPlayer;
+                AmandsHitmarkerClass.PlayerSuperior = localPlayer.gameObject;
+                AmandsHitmarkerClass.Kills = 0;
+            }
+        }
+    }
+    public class AmandsMenuUIPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return typeof(EFT.UI.MenuUI).GetMethod("Awake", BindingFlags.Instance | BindingFlags.Public);
+        }
+        [PatchPostfix]
+        private static void PatchPostFix(ref EFT.UI.MenuUI __instance)
+        {
+            AmandsHitmarkerClass.ActiveUIScreen = __instance.transform.GetChild(0).gameObject;
+            AmandsHitmarkerClass.DestroyGameObjects();
+            AmandsHitmarkerClass.CreateGameObjects(__instance.transform.GetChild(0));
+            AmandsHitmarkerClass.XPFormula();
+        }
+    }
+    public class AmandsBattleUIScreenPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return typeof(EFT.UI.BattleUIScreen).GetMethod("Show", BindingFlags.Instance | BindingFlags.NonPublic);
+        }
+        [PatchPostfix]
+        private static void PatchPostFix(ref EFT.UI.BattleUIScreen __instance)
+        {
+            AmandsHitmarkerClass.ActiveUIScreen = __instance.gameObject;
+            AmandsHitmarkerClass.DestroyGameObjects();
+            AmandsHitmarkerClass.CreateGameObjects(__instance.transform);
+            AmandsHitmarkerClass.XPFormula();
+        }
+    }
+    public class AmandsSSAAPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return typeof(SSAA).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);
+        }
+        [PatchPostfix]
+        private static void PatchPostFix(ref SSAA __instance)
+        {
+            AmandsHitmarkerClass.FPSCameraSSAA = __instance;
         }
     }
     public class AmandsDamagePatch : ModulePatch
@@ -249,12 +320,14 @@ namespace AmandsHitmarker
                 AmandsHitmarkerClass.killDamageInfo = damageInfo;
                 AmandsHitmarkerClass.killBodyPart = bodyPart;
                 AmandsHitmarkerClass.killRole = Traverse.Create(Traverse.Create(__instance.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>();
+                AmandsHitmarkerClass.killExperience = Traverse.Create(Traverse.Create(__instance.Profile.Info).Field("Settings").GetValue<object>()).Field("Experience").GetValue<int>();
                 AmandsHitmarkerClass.killPlayerName = __instance.Profile.Nickname;
                 AmandsHitmarkerClass.killPlayerSide = __instance.Side;
                 AmandsHitmarkerClass.killDistance = Vector3.Distance(aggressor.Position, __instance.Position);
                 AmandsHitmarkerClass.lethalDamageType = lethalDamageType;
                 AmandsHitmarkerClass.killLevel = __instance.Profile.Info.Level;
                 AmandsHitmarkerClass.killWeaponName = AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName,0);
+                AmandsHitmarkerClass.Kills += 1;
             }
         }
     }
