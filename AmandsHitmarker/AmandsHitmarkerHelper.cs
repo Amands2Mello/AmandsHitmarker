@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using Aki.Reflection.Utils;
 using System.Linq;
@@ -20,6 +20,9 @@ namespace AmandsHitmarker
         private static Type TransliterateType;
         private static MethodInfo TransliterateMethod;
 
+        public static bool UsesFSR2UpscalerMethodFound;
+        private static MethodInfo UsesFSR2UpscalerMethod;
+
         public static void Init()
         {
             LocalizedType = PatchConstants.EftTypes.Single((Type x) => x.GetMethod("ParseLocalization", BindingFlags.Static | BindingFlags.Public) != null);
@@ -34,6 +37,8 @@ namespace AmandsHitmarker
 
             TransliterateType = PatchConstants.EftTypes.Single(x => x.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance).Any(t => t.Name == "Transliterate"));
             TransliterateMethod = TransliterateType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance).Single(x => x.Name == "Transliterate" && x.GetParameters().Length == 1);
+            UsesFSR2UpscalerMethod = typeof(SSAA).GetMethod("UsesFSR2Upscaler", BindingFlags.Public | BindingFlags.Instance);
+            UsesFSR2UpscalerMethodFound = UsesFSR2UpscalerMethod != null;
         }
         public static string Localized(string id, EStringCase @case)
         {
@@ -77,6 +82,12 @@ namespace AmandsHitmarker
             {
                 text
             });
+        }
+        public static bool UsesFSR2Upscaler()
+        {
+            return UsesFSR2UpscalerMethodFound ? (bool)UsesFSR2UpscalerMethod.Invoke(null, new object[]
+            {
+            }) : false;
         }
     }
 }
