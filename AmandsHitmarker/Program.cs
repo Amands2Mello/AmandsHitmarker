@@ -13,7 +13,7 @@ using System;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.4.0")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.0")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -76,6 +76,7 @@ namespace AmandsHitmarker
         public static ConfigEntry<string> ArmorBreakSoundButton { get; set; }
         public static ConfigEntry<string> KillHitmarkerSoundButton { get; set; }
         public static ConfigEntry<string> ReloadFilesButton { get; set; }
+        public static ConfigEntry<string> ReloadUIButton { get; set; }
 
         public static ConfigEntry<bool> StaticHitmarkerOnly { get; set; }
         public static ConfigEntry<Vector2> StaticSizeDelta { get; set; }
@@ -116,6 +117,20 @@ namespace AmandsHitmarker
         public static ConfigEntry<int> MultiKillfeedChildSpacing { get; set; }
         public static ConfigEntry<Vector2> MultiKillfeedRectPosition { get; set; }
         public static ConfigEntry<Vector2> MultiKillfeedRectPivot { get; set; }
+
+        public static ConfigEntry<bool> EnableRaidKillfeed { get; set; }
+        public static ConfigEntry<bool> RaidKillRole { get; set; }
+        public static ConfigEntry<EKillNameColor> RaidKillNameColor { get; set; }
+        public static ConfigEntry<float> RaidKillTime { get; set; }
+        public static ConfigEntry<int> RaidKillDistance { get; set; }
+        public static ConfigEntry<int> RaidKillFontSize { get; set; }
+        public static ConfigEntry<float> RaidKillFontOutline { get; set; }
+        public static ConfigEntry<int> RaidKillChildSpacing { get; set; }
+        public static ConfigEntry<ERaidKillPreset> RaidKillPreset { get; set; }
+        public static ConfigEntry<bool> RaidKillChildDirection { get; set; }
+        public static ConfigEntry<Vector2> RaidKillRectPosition { get; set; }
+        public static ConfigEntry<Vector2> RaidKillRectPivot { get; set; }
+        public static ConfigEntry<TextAlignmentOptions> RaidKillTextAlignment { get; set; }
 
         public static ConfigEntry<bool> EnableDamageNumber { get; set; }
         public static ConfigEntry<bool> EnableArmorDamageNumber { get; set; }
@@ -191,6 +206,7 @@ namespace AmandsHitmarker
             ArmorBreakSoundButton = Config.Bind<string>("Debug", "ArmorBreakSoundButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130, HideSettingName = true, CustomDrawer = ArmorBreakSoundButtonDrawer }));
             KillHitmarkerSoundButton = Config.Bind<string>("Debug", "KillHitmarkerSoundButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120, HideSettingName = true, CustomDrawer = KillHitmarkerSoundButtonDrawer }));
             ReloadFilesButton = Config.Bind<string>("Debug", "ReloadFilesButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, HideSettingName = true, CustomDrawer = ReloadFilesButtonDrawer }));
+            ReloadUIButton = Config.Bind<string>("Debug", "ReloadUIButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 100, HideSettingName = true, CustomDrawer = ReloadUIButtonDrawer }));
 
             StaticHitmarkerOnly = Config.Bind<bool>("Static", "StaticHitmarkerOnly", false, new ConfigDescription("Use only the static hitmarker image", null, new ConfigurationManagerAttributes { Order = 140, IsAdvanced = true }));
             StaticSizeDelta = Config.Bind<Vector2>("Static", "StaticSizeDelta", new Vector2(200.0f, 200.0f), new ConfigDescription("Static hitmarker size", null, new ConfigurationManagerAttributes { Order = 130, IsAdvanced = true }));
@@ -221,7 +237,7 @@ namespace AmandsHitmarker
 
             EnableMultiKillfeed = Config.Bind<bool>("AmandsMultiKillfeed", "EnableMultiKillfeed", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 220 }));
             MultiKillfeedPMCIconMode = Config.Bind<EMultiKillfeedPMCMode>("AmandsMultiKillfeed", "PMC Icon Mode", EMultiKillfeedPMCMode.Ranks, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 210 }));
-            MultiKillfeedColorMode = Config.Bind<EMultiKillfeedColorMode>("AmandsMultiKillfeed", "IconColor Mode", EMultiKillfeedColorMode.HeadshotOnly, new ConfigDescription("Icon Color Mode", null, new ConfigurationManagerAttributes { Order = 200 }));
+            MultiKillfeedColorMode = Config.Bind<EMultiKillfeedColorMode>("AmandsMultiKillfeed", "IconColor Mode", EMultiKillfeedColorMode.HeadshotColorOnly, new ConfigDescription("Icon Color Mode", null, new ConfigurationManagerAttributes { Order = 200 }));
             MultiKillfeedColor = Config.Bind<Color>("AmandsMultiKillfeed", "IconColor", new Color(0.84f, 0.88f, 0.95f, 1f), new ConfigDescription("Icon Color", null, new ConfigurationManagerAttributes { Order = 190 }));
             MultiKillfeedHeadshotColor = Config.Bind<Color>("AmandsMultiKillfeed", "IconHeadshotColor", new Color(0.9f, 0.0f, 0.0f, 1f), new ConfigDescription("Icon Headshot Color", null, new ConfigurationManagerAttributes { Order = 180 }));
             MultiKillfeedUsecShape = Config.Bind<string>("AmandsMultiKillfeed", "UsecShape", "Usec.png", new ConfigDescription("Supported File PNG", null, new ConfigurationManagerAttributes { Order = 170, IsAdvanced = true }));
@@ -231,6 +247,20 @@ namespace AmandsHitmarker
             MultiKillfeedChildSpacing = Config.Bind<int>("AmandsMultiKillfeed", "IconSpacing", -75, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130 }));
             MultiKillfeedRectPosition = Config.Bind<Vector2>("AmandsMultiKillfeed", "RectPosition", new Vector2(0f, -220f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120 }));
             MultiKillfeedRectPivot = Config.Bind<Vector2>("AmandsMultiKillfeed", "RectPivot", new Vector2(0f, 0.5f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
+
+            EnableRaidKillfeed = Config.Bind<bool>("AmandsRaidKillfeed", "EnableRaidKillfeed", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 230 }));
+            RaidKillRole = Config.Bind<bool>("AmandsRaidKillfeed", "RaidKillRole", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 220 }));
+            RaidKillNameColor = Config.Bind<EKillNameColor>("AmandsRaidKillfeed", "Name", EKillNameColor.Colored, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 210 }));
+            RaidKillTime = Config.Bind<float>("AmandsRaidKillfeed", "Time", 5f, new ConfigDescription("", new AcceptableValueRange<float>(0.1f, 20.0f), new ConfigurationManagerAttributes { Order = 200 }));
+            RaidKillDistance = Config.Bind<int>("AmandsRaidKillfeed", "Distance", 10000, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 190 }));
+            RaidKillFontSize = Config.Bind<int>("AmandsRaidKillfeed", "FontSize", 20, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 180 }));
+            RaidKillFontOutline = Config.Bind<float>("AmandsRaidKillfeed", "FontOutline", 0.01f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 170, IsAdvanced = true }));
+            RaidKillChildSpacing = Config.Bind<int>("AmandsRaidKillfeed", "TextSpacing", -28, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 160 }));
+            RaidKillPreset = Config.Bind<ERaidKillPreset>("AmandsRaidKillfeed", "Preset", ERaidKillPreset.BottomLeft, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 150 }));
+            RaidKillChildDirection = Config.Bind<bool>("AmandsRaidKillfeed", "Invert TextDirection", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 140, IsAdvanced = true }));
+            RaidKillRectPosition = Config.Bind<Vector2>("AmandsRaidKillfeed", "RectPosition", new Vector2(-((Screen.width / 2) - 30), -280f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130 }));
+            RaidKillRectPivot = Config.Bind<Vector2>("AmandsRaidKillfeed", "RectPivot", new Vector2(0f, 0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120, IsAdvanced = true }));
+            RaidKillTextAlignment = Config.Bind<TextAlignmentOptions>("AmandsRaidKillfeed", "TextAlignment", TextAlignmentOptions.Left, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
 
             EnableDamageNumber = Config.Bind<bool>("AmandsHitmarker DamageNumber", "EnableDamageNumber", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 190 }));
             EnableArmorDamageNumber = Config.Bind<bool>("AmandsHitmarker DamageNumber", "EnableArmorDamageNumber", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 180 }));
@@ -346,6 +376,11 @@ namespace AmandsHitmarker
         {
             bool button = GUILayout.Button("ReloadFiles", GUILayout.ExpandWidth(true));
             if (button) AmandsHitmarkerClass.ReloadFiles();
+        }
+        private static void ReloadUIButtonDrawer(ConfigEntryBase entry)
+        {
+            bool button = GUILayout.Button("ReloadUI", GUILayout.ExpandWidth(true));
+            if (button) AmandsHitmarkerClass.ReloadUI();
         }
     }
     public class AmandsLocalPlayerPatch : ModulePatch
@@ -464,22 +499,18 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(ArmorComponent).GetMethod("ApplyDurabilityDamage", BindingFlags.Instance | BindingFlags.Public);
+            return typeof(ArmorComponent).GetMethod("ApplyDamage", BindingFlags.Instance | BindingFlags.Public);
         }
-        [PatchPrefix]
-        private static void PatchPrefix(ref ArmorComponent __instance, float armorDamage)
+        [PatchPostfix]
+        private static void PatchPostFix(ref ArmorComponent __instance, float __result, DamageInfo damageInfo)
         {
-            if (AHitmarkerPlugin.PlayerProceedDamageThroughArmor != null && armorDamage > 0)
+            if (damageInfo.Player != null && damageInfo.Player.IsYourPlayer && __result > 0)
             {
-                List<ArmorComponent> list = Traverse.Create(AHitmarkerPlugin.PlayerProceedDamageThroughArmor).Field("_preAllocatedArmorComponents").GetValue<List<ArmorComponent>>();
-                if (list.Contains(__instance))
+                AmandsHitmarkerClass.ArmorDamageNumber += Mathf.Min(__instance.Repairable.Durability, __result);
+                AmandsHitmarkerClass.armorHitmarker = true;
+                if (__instance.Repairable.Durability == 0)
                 {
-                    AmandsHitmarkerClass.ArmorDamageNumber += Mathf.Min(__instance.Repairable.Durability, armorDamage);
-                    AmandsHitmarkerClass.armorHitmarker = true;
-                    if (__instance.Repairable.Durability - armorDamage < 0)
-                    {
-                        AmandsHitmarkerClass.armorBreak = true;
-                    }
+                    AmandsHitmarkerClass.armorBreak = true;
                 }
             }
         }
@@ -503,12 +534,17 @@ namespace AmandsHitmarker
                 AmandsHitmarkerClass.killPlayerName = __instance.Profile.Nickname;
                 AmandsHitmarkerClass.killPlayerSide = __instance.Side;
                 AmandsHitmarkerClass.killDistance = Vector3.Distance(aggressor.Position, __instance.Position);
-                AmandsHitmarkerClass.lethalDamageType = lethalDamageType;
+                AmandsHitmarkerClass.killLethalDamageType = lethalDamageType;
                 AmandsHitmarkerClass.killLevel = __instance.Profile.Info.Level;
-                AmandsHitmarkerClass.killWeaponName = AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName,0);
+                AmandsHitmarkerClass.killWeaponName = damageInfo.Weapon == null ? "?" : AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName,0);
                 AmandsHitmarkerClass.Kills += 1;
                 AmandsHitmarkerClass.Killfeed();
                 AmandsHitmarkerClass.MultiKillfeed();
+            }
+            if (AHitmarkerPlugin.EnableRaidKillfeed.Value && aggressor != null)
+            {
+                if (AmandsHitmarkerClass.localPlayer != null && AmandsHitmarkerClass.localPlayer != aggressor && Vector3.Distance(AmandsHitmarkerClass.localPlayer.Position, __instance.Position) > AHitmarkerPlugin.RaidKillDistance.Value) return;
+                AmandsHitmarkerClass.RaidKillfeed(aggressor.Side, Traverse.Create(Traverse.Create(aggressor.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>(), (aggressor.Side == EPlayerSide.Savage ? AmandsHitmarkerHelper.Transliterate(aggressor.Profile.Nickname) : aggressor.Profile.Nickname), damageInfo.Weapon == null ? "?" : AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName, 0), lethalDamageType, __instance.Side, Traverse.Create(Traverse.Create(__instance.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>(), (__instance.Side == EPlayerSide.Savage ? AmandsHitmarkerHelper.Transliterate(__instance.Profile.Nickname) : __instance.Profile.Nickname));
             }
         }
     }
