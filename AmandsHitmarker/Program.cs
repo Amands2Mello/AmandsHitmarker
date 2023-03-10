@@ -499,18 +499,22 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(ArmorComponent).GetMethod("ApplyDamage", BindingFlags.Instance | BindingFlags.Public);
+            return typeof(ArmorComponent).GetMethod("ApplyDurabilityDamage", BindingFlags.Instance | BindingFlags.Public);
         }
-        [PatchPostfix]
-        private static void PatchPostFix(ref ArmorComponent __instance, float __result, DamageInfo damageInfo)
+        [PatchPrefix]
+        private static void PatchPrefix(ref ArmorComponent __instance, float armorDamage)
         {
-            if (damageInfo.Player != null && damageInfo.Player.IsYourPlayer && __result > 0)
+            if (AHitmarkerPlugin.PlayerProceedDamageThroughArmor != null && armorDamage > 0)
             {
-                AmandsHitmarkerClass.ArmorDamageNumber += Mathf.Min(__instance.Repairable.Durability, __result);
-                AmandsHitmarkerClass.armorHitmarker = true;
-                if (__instance.Repairable.Durability == 0)
+                List<ArmorComponent> list = Traverse.Create(AHitmarkerPlugin.PlayerProceedDamageThroughArmor).Field("_preAllocatedArmorComponents").GetValue<List<ArmorComponent>>();
+                if (list.Contains(__instance))
                 {
-                    AmandsHitmarkerClass.armorBreak = true;
+                    AmandsHitmarkerClass.ArmorDamageNumber += Mathf.Min(__instance.Repairable.Durability, armorDamage);
+                    AmandsHitmarkerClass.armorHitmarker = true;
+                    if (__instance.Repairable.Durability - armorDamage < 0)
+                    {
+                        AmandsHitmarkerClass.armorBreak = true;
+                    }
                 }
             }
         }
