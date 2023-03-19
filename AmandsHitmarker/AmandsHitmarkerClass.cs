@@ -133,7 +133,7 @@ namespace AmandsHitmarker
 
         public static void XPFormula()
         {
-            BackendConfigSettingsClass backendConfigSettingsClass = Singleton<BackendConfigSettingsClass>.Instance;
+            /*BackendConfigSettingsClass backendConfigSettingsClass = Singleton<BackendConfigSettingsClass>.Instance;
             if (backendConfigSettingsClass != null)
             {
                 object Experience = Traverse.Create(backendConfigSettingsClass).Field("Experience").GetValue<object>();
@@ -154,7 +154,12 @@ namespace AmandsHitmarker
                         }
                     }
                 }
-            }
+            }*/
+            VictimLevelExp = 175;
+            VictimBotLevelExp = 100;
+            HeadShotMult = 1.2f;
+            LongShotDistance = 100;
+            Combo = new List<int>() { 0, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
         }
         public static int GetKillingBonusPercent(int killed)
         {
@@ -196,8 +201,6 @@ namespace AmandsHitmarker
             AHitmarkerPlugin.KillFontUpperCase.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.KillChildSpacing.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.KillPreset.SettingChanged += UsecHitmarkerDebug;
-            AHitmarkerPlugin.KillRectPosition.SettingChanged += UsecHitmarkerDebug;
-            AHitmarkerPlugin.KillRectPivot.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.KillChildDirection.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.KillTextAlignment.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.KillOpacitySpeed.SettingChanged += UsecHitmarkerDebug;
@@ -210,8 +213,7 @@ namespace AmandsHitmarker
 
             AHitmarkerPlugin.KillChildSpacing.SettingChanged += UpdateKillfeed;
             AHitmarkerPlugin.KillPreset.SettingChanged += UpdateKillPreset;
-            AHitmarkerPlugin.KillRectPosition.SettingChanged += UpdateKillfeed;
-            AHitmarkerPlugin.KillRectPivot.SettingChanged += UpdateKillfeed;
+            AHitmarkerPlugin.KillPosition.SettingChanged += UpdateKillfeed;
 
             AHitmarkerPlugin.EnableMultiKillfeed.SettingChanged += UsecHitmarkerDebug;
             AHitmarkerPlugin.MultiKillfeedPMCIconMode.SettingChanged += UsecHitmarkerDebug;
@@ -230,8 +232,7 @@ namespace AmandsHitmarker
 
             AHitmarkerPlugin.RaidKillChildSpacing.SettingChanged += UpdateRaidKillfeed;
             AHitmarkerPlugin.RaidKillPreset.SettingChanged += UpdateRaidKillPreset;
-            AHitmarkerPlugin.RaidKillRectPosition.SettingChanged += UpdateRaidKillfeed;
-            AHitmarkerPlugin.RaidKillRectPivot.SettingChanged += UpdateRaidKillfeed;
+            AHitmarkerPlugin.RaidKillPosition.SettingChanged += UpdateRaidKillfeed;
 
             AHitmarkerPlugin.DamageFontSize.SettingChanged += UpdateDamageNumbers;
             AHitmarkerPlugin.DamageFontOutline.SettingChanged += UpdateDamageNumbers;
@@ -378,12 +379,20 @@ namespace AmandsHitmarker
                             BleedRect.localPosition = DebugOffset;
                             ForceHitmarkerPosition = true;
                             break;
-                        case EDamageType.LethalToxin:
                         case EDamageType.Poison:
                             BleedColor = AHitmarkerPlugin.PoisonColor.Value;
                             BleedRect.sizeDelta = AHitmarkerPlugin.BleedSize.Value;
                             BleedRect.localPosition = DebugOffset;
                             ForceHitmarkerPosition = true;
+                            break;
+                        default:
+                            if (killLethalDamageType.ToString() == "LethalToxin")
+                            {
+                                BleedColor = AHitmarkerPlugin.PoisonColor.Value;
+                                BleedRect.sizeDelta = AHitmarkerPlugin.BleedSize.Value;
+                                BleedRect.localPosition = DebugOffset;
+                                ForceHitmarkerPosition = true;
+                            }
                             break;
                     }
                     if (AHitmarkerPlugin.EnableSounds.Value && !DebugMode)
@@ -584,9 +593,14 @@ namespace AmandsHitmarker
                     case EDamageType.HeavyBleeding:
                         UpperText = "<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.BleedColor.Value) + ">" + "BLEEDING" + "</color> ";
                         break;
-                    case EDamageType.LethalToxin:
                     case EDamageType.Poison:
                         UpperText = "<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.PoisonColor.Value) + ">" + "POISON" + "</color> ";
+                        break;
+                    default:
+                        if (killLethalDamageType.ToString() == "LethalToxin")
+                        {
+                            UpperText = "<color=#" + ColorUtility.ToHtmlStringRGB(AHitmarkerPlugin.PoisonColor.Value) + ">" + "POISON" + "</color> ";
+                        }
                         break;
                 }
                 if (killBodyPart == EBodyPart.Head)
@@ -717,12 +731,10 @@ namespace AmandsHitmarker
             rectTransform.sizeDelta = new Vector2(0f, 0f);
             verticalLayoutGroup = killListGameObject.AddComponent<VerticalLayoutGroup>();
             verticalLayoutGroup.childControlHeight = false;
-            verticalLayoutGroup.spacing = AHitmarkerPlugin.KillChildSpacing.Value;
             ContentSizeFitter contentSizeFitter = killListGameObject.AddComponent<ContentSizeFitter>();
             contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            rectTransform.localPosition = new Vector3(AHitmarkerPlugin.KillRectPosition.Value.x, AHitmarkerPlugin.KillRectPosition.Value.y, 0f);
-            rectTransform.pivot = AHitmarkerPlugin.KillRectPivot.Value;
+            UpdateKillfeed(null,null);
 
             multiKillfeedGameObject = new GameObject("multiKillList");
             multiKillfeedrectTransform = multiKillfeedGameObject.AddComponent<RectTransform>();
@@ -750,12 +762,10 @@ namespace AmandsHitmarker
             raidKillrectTransform.sizeDelta = new Vector2(0f, 0f);
             raidKillverticalLayoutGroup = raidKillListGameObject.AddComponent<VerticalLayoutGroup>();
             raidKillverticalLayoutGroup.childControlHeight = false;
-            raidKillverticalLayoutGroup.spacing = AHitmarkerPlugin.RaidKillChildSpacing.Value;
             ContentSizeFitter contentSizeFitter3 = raidKillListGameObject.AddComponent<ContentSizeFitter>();
             contentSizeFitter3.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             contentSizeFitter3.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            raidKillrectTransform.localPosition = new Vector3(AHitmarkerPlugin.RaidKillRectPosition.Value.x, AHitmarkerPlugin.RaidKillRectPosition.Value.y, 0f);
-            raidKillrectTransform.pivot = AHitmarkerPlugin.RaidKillRectPivot.Value;
+            UpdateRaidKillfeed(null, null);
 
             ArmorHitmarker = new GameObject("ArmorHitmarker");
             ArmorHitmarkerRect = ArmorHitmarker.AddComponent<RectTransform>();
@@ -831,24 +841,6 @@ namespace AmandsHitmarker
             if (BLH != null) Destroy(BLH);
             if (BRH != null) Destroy(BRH);
         }
-        public void CreateDebugText(string text, int fontSize, float time)
-        {
-            if (!AHitmarkerPlugin.EnableKillfeed.Value) return;
-            GameObject TextGameObject = new GameObject("TextGameObject");
-            TextGameObject.transform.SetParent(killListGameObject.transform);
-            if (AHitmarkerPlugin.KillChildDirection.Value)
-            {
-                TextGameObject.transform.SetSiblingIndex(0);
-            }
-            AmandsKillfeedText TempAmandsAnimatedText = TextGameObject.AddComponent<AmandsKillfeedText>();
-            TempAmandsAnimatedText.text = text;
-            TempAmandsAnimatedText.color = AHitmarkerPlugin.KillTextColor.Value;
-            TempAmandsAnimatedText.fontSize = fontSize;
-            TempAmandsAnimatedText.outlineWidth = AHitmarkerPlugin.KillFontOutline.Value;
-            TempAmandsAnimatedText.textAlignmentOptions = AHitmarkerPlugin.KillTextAlignment.Value;
-            TempAmandsAnimatedText.EnableWaitAndStart = false;
-            Destroy(TextGameObject, time);
-        }
         public static void CreateUpperText(string text, int fontSize, float time, float OpacitySpeed)
         {
             if (!AHitmarkerPlugin.EnableKillfeed.Value) return;
@@ -867,7 +859,7 @@ namespace AmandsHitmarker
             TempAmandsAnimatedText.OpacitySpeed = OpacitySpeed;
             TempAmandsAnimatedText.textAlignmentOptions = AHitmarkerPlugin.KillTextAlignment.Value;
             LastAmandsKillfeedText = TempAmandsAnimatedText;
-            Destroy(TextGameObject, time + 10);
+            //Destroy(TextGameObject, time + 10);
         }
         public static void CreateKillText()
         {
@@ -1061,7 +1053,7 @@ namespace AmandsHitmarker
             TempAmandsAnimatedText.OpacitySpeed = AHitmarkerPlugin.KillOpacitySpeed.Value;
             TempAmandsAnimatedText.textAlignmentOptions = AHitmarkerPlugin.KillTextAlignment.Value;
             LastAmandsKillfeedText = TempAmandsAnimatedText;
-            Destroy(TextGameObject, AHitmarkerPlugin.KillTime.Value + 10);
+            //Destroy(TextGameObject, AHitmarkerPlugin.KillTime.Value + 10);
         }
         public static void RaidKillfeed(EPlayerSide aggressorSide, WildSpawnType aggressorRole, string aggressorNickname, string weaponName, EDamageType lethalDamageType, EPlayerSide victimSide, WildSpawnType victimRole, string victimNickname)
         {
@@ -1162,7 +1154,7 @@ namespace AmandsHitmarker
             tempAmandsRaidKillfeedText.OpacitySpeed = AHitmarkerPlugin.KillOpacitySpeed.Value;
             tempAmandsRaidKillfeedText.textAlignmentOptions = AHitmarkerPlugin.RaidKillTextAlignment.Value;
             LastAmandsRaidKillfeedText = tempAmandsRaidKillfeedText;
-            Destroy(TextGameObject, AHitmarkerPlugin.RaidKillTime.Value + 10);
+            //Destroy(TextGameObject, AHitmarkerPlugin.RaidKillTime.Value + 10);
         }
         public static void ReloadUI()
         {
@@ -1304,12 +1296,12 @@ namespace AmandsHitmarker
             aggNickname = DebugNames[rnd.Next(DebugNames.Count)];
             bodyPart = EBodyPart.Chest;
             killBodyPart = EBodyPart.Chest;
-            killLethalDamageType = EDamageType.LethalToxin;
+            killLethalDamageType = EDamageType.Poison;
             killLevel = (int)UnityEngine.Random.Range(1,80);
             killHitmarker = ActiveUIScreen != null;
             Killfeed();
             MultiKillfeed();
-            RaidKillfeed(EPlayerSide.Usec, WildSpawnType.bossKnight, aggNickname, killWeaponName, EDamageType.LethalToxin, EPlayerSide.Savage, WildSpawnType.assault, killPlayerName);
+            RaidKillfeed(EPlayerSide.Usec, WildSpawnType.bossKnight, aggNickname, killWeaponName, EDamageType.Poison, EPlayerSide.Savage, WildSpawnType.assault, killPlayerName);
         }
         public static void ArmorHitmarkerDebug(object sender, EventArgs e)
         {
@@ -1533,103 +1525,137 @@ namespace AmandsHitmarker
         {
             ReloadFiles();
         }
-        public void UpdateKillPreset(object sender, EventArgs e)
-        {
-            switch (AHitmarkerPlugin.KillPreset.Value)
-            {
-                case EKillPreset.Center:
-                    AHitmarkerPlugin.KillChildDirection.Value = true;
-                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2(0f, -250f);
-                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(0.5f, 1f);
-                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
-                    break;
-                case EKillPreset.TopLeft:
-                    AHitmarkerPlugin.KillChildDirection.Value = true;
-                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2(-((Screen.width / 2) - 30), 530f);
-                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(0.0f, 1f);
-                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Left;
-                    break;
-                case EKillPreset.TopRight:
-                    AHitmarkerPlugin.KillChildDirection.Value = true;
-                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2((Screen.width / 2) - 30, 530f);
-                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(1f, 1f);
-                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
-                    break;
-                case EKillPreset.BottomLeft:
-                    AHitmarkerPlugin.KillChildDirection.Value = false;
-                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2(-((Screen.width / 2) - 30), -280f);
-                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(0f, 0f);
-                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Left;
-                    break;
-                case EKillPreset.BottomRight:
-                    AHitmarkerPlugin.KillChildDirection.Value = false;
-                    AHitmarkerPlugin.KillRectPosition.Value = new Vector2((Screen.width / 2) - 30, -420.0f);
-                    AHitmarkerPlugin.KillRectPivot.Value = new Vector2(1f, 0f);
-                    AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
-                    break;
-            }
-            if (rectTransform != null && verticalLayoutGroup != null)
-            {
-                rectTransform.localPosition = new Vector3(AHitmarkerPlugin.KillRectPosition.Value.x, AHitmarkerPlugin.KillRectPosition.Value.y, 0f);
-                rectTransform.pivot = AHitmarkerPlugin.KillRectPivot.Value;
-                verticalLayoutGroup.spacing = AHitmarkerPlugin.KillChildSpacing.Value;
-            }
-        }
-        public void UpdateKillfeed(object sender, EventArgs e)
+        public static void UpdateKillPreset(object sender, EventArgs e)
         {
             if (rectTransform != null && verticalLayoutGroup != null)
             {
-                rectTransform.localPosition = new Vector3(AHitmarkerPlugin.KillRectPosition.Value.x, AHitmarkerPlugin.KillRectPosition.Value.y, 0f);
-                rectTransform.pivot = AHitmarkerPlugin.KillRectPivot.Value;
                 verticalLayoutGroup.spacing = AHitmarkerPlugin.KillChildSpacing.Value;
+                switch (AHitmarkerPlugin.KillPreset.Value)
+                {
+                    case EKillPreset.Center:
+                        rectTransform.localPosition = new Vector2(0f, -250f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(0.5f, 1f);
+                        AHitmarkerPlugin.KillChildDirection.Value = true;
+                        AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
+                        break;
+                    case EKillPreset.TopLeft:
+                        rectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), 530f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(0.0f, 1f);
+                        AHitmarkerPlugin.KillChildDirection.Value = true;
+                        AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Left;
+                        break;
+                    case EKillPreset.TopRight:
+                        rectTransform.localPosition = new Vector2((Screen.width / 2) - 30, 530f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(1f, 1f);
+                        AHitmarkerPlugin.KillChildDirection.Value = true;
+                        AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
+                        break;
+                    case EKillPreset.BottomLeft:
+                        rectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), -280f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(0f, 0f);
+                        AHitmarkerPlugin.KillChildDirection.Value = false;
+                        AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Left;
+                        break;
+                    case EKillPreset.BottomRight:
+                        rectTransform.localPosition = new Vector2((Screen.width / 2) - 30, -420.0f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(1f, 0f);
+                        AHitmarkerPlugin.KillChildDirection.Value = false;
+                        AHitmarkerPlugin.KillTextAlignment.Value = TextAlignmentOptions.Right;
+                        break;
+                }
             }
         }
-        public void UpdateRaidKillPreset(object sender, EventArgs e)
+        public static void UpdateKillfeed(object sender, EventArgs e)
         {
-            switch (AHitmarkerPlugin.RaidKillPreset.Value)
+            if (rectTransform != null && verticalLayoutGroup != null)
             {
-                case ERaidKillPreset.TopLeft:
-                    AHitmarkerPlugin.RaidKillChildDirection.Value = true;
-                    AHitmarkerPlugin.RaidKillRectPosition.Value = new Vector2(-((Screen.width / 2) - 30), 530f);
-                    AHitmarkerPlugin.RaidKillRectPivot.Value = new Vector2(0.0f, 1f);
-                    AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Left;
-                    break;
-                case ERaidKillPreset.TopRight:
-                    AHitmarkerPlugin.RaidKillChildDirection.Value = true;
-                    AHitmarkerPlugin.RaidKillRectPosition.Value = new Vector2((Screen.width / 2) - 30, 530f);
-                    AHitmarkerPlugin.RaidKillRectPivot.Value = new Vector2(1f, 1f);
-                    AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Right;
-                    break;
-                case ERaidKillPreset.BottomLeft:
-                    AHitmarkerPlugin.RaidKillChildDirection.Value = false;
-                    AHitmarkerPlugin.RaidKillRectPosition.Value = new Vector2(-((Screen.width / 2) - 30), -280f);
-                    AHitmarkerPlugin.RaidKillRectPivot.Value = new Vector2(0f, 0f);
-                    AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Left;
-                    break;
-                case ERaidKillPreset.BottomRight:
-                    AHitmarkerPlugin.RaidKillChildDirection.Value = false;
-                    AHitmarkerPlugin.RaidKillRectPosition.Value = new Vector2((Screen.width / 2) - 30, -420.0f);
-                    AHitmarkerPlugin.RaidKillRectPivot.Value = new Vector2(1f, 0f);
-                    AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Right;
-                    break;
+                verticalLayoutGroup.spacing = AHitmarkerPlugin.KillChildSpacing.Value;
+                switch (AHitmarkerPlugin.KillPreset.Value)
+                {
+                    case EKillPreset.Center:
+                        rectTransform.localPosition = new Vector2(0f, -250f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(0.5f, 1f);
+                        break;
+                    case EKillPreset.TopLeft:
+                        rectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), 530f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(0.0f, 1f);
+                        break;
+                    case EKillPreset.TopRight:
+                        rectTransform.localPosition = new Vector2((Screen.width / 2) - 30, 530f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(1f, 1f);
+                        break;
+                    case EKillPreset.BottomLeft:
+                        rectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), -280f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(0f, 0f);
+                        break;
+                    case EKillPreset.BottomRight:
+                        rectTransform.localPosition = new Vector2((Screen.width / 2) - 30, -420.0f) + AHitmarkerPlugin.KillPosition.Value;
+                        rectTransform.pivot = new Vector2(1f, 0f);
+                        break;
+                }
             }
+        }
+        public static void UpdateRaidKillPreset(object sender, EventArgs e)
+        {
             if (raidKillrectTransform != null && raidKillverticalLayoutGroup != null)
             {
-                raidKillrectTransform.localPosition = new Vector3(AHitmarkerPlugin.RaidKillRectPosition.Value.x, AHitmarkerPlugin.RaidKillRectPosition.Value.y, 0f);
-                raidKillrectTransform.pivot = AHitmarkerPlugin.RaidKillRectPivot.Value;
                 raidKillverticalLayoutGroup.spacing = AHitmarkerPlugin.RaidKillChildSpacing.Value;
+                switch (AHitmarkerPlugin.RaidKillPreset.Value)
+                {
+                    case ERaidKillPreset.TopLeft:
+                        AHitmarkerPlugin.RaidKillChildDirection.Value = true;
+                        raidKillrectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), 530f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(0.0f, 1f);
+                        AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Left;
+                        break;
+                    case ERaidKillPreset.TopRight:
+                        AHitmarkerPlugin.RaidKillChildDirection.Value = true;
+                        raidKillrectTransform.localPosition = new Vector2((Screen.width / 2) - 30, 530f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(1f, 1f);
+                        AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Right;
+                        break;
+                    case ERaidKillPreset.BottomLeft:
+                        AHitmarkerPlugin.RaidKillChildDirection.Value = false;
+                        raidKillrectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), -280f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(0f, 0f);
+                        AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Left;
+                        break;
+                    case ERaidKillPreset.BottomRight:
+                        AHitmarkerPlugin.RaidKillChildDirection.Value = false;
+                        raidKillrectTransform.localPosition = new Vector2((Screen.width / 2) - 30, -420.0f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(1f, 0f);
+                        AHitmarkerPlugin.RaidKillTextAlignment.Value = TextAlignmentOptions.Right;
+                        break;
+                }
             }
         }
-        public void UpdateRaidKillfeed(object sender, EventArgs e)
+        public static void UpdateRaidKillfeed(object sender, EventArgs e)
         {
             if (raidKillrectTransform != null && raidKillverticalLayoutGroup != null)
             {
-                raidKillrectTransform.localPosition = new Vector3(AHitmarkerPlugin.RaidKillRectPosition.Value.x, AHitmarkerPlugin.RaidKillRectPosition.Value.y, 0f);
-                raidKillrectTransform.pivot = AHitmarkerPlugin.RaidKillRectPivot.Value;
                 raidKillverticalLayoutGroup.spacing = AHitmarkerPlugin.RaidKillChildSpacing.Value;
+                switch (AHitmarkerPlugin.RaidKillPreset.Value)
+                {
+                    case ERaidKillPreset.TopLeft:
+                        raidKillrectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), 530f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(0.0f, 1f);
+                        break;
+                    case ERaidKillPreset.TopRight:
+                        raidKillrectTransform.localPosition = new Vector2((Screen.width / 2) - 30, 530f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(1f, 1f);
+                        break;
+                    case ERaidKillPreset.BottomLeft:
+                        raidKillrectTransform.localPosition = new Vector2(-((Screen.width / 2) - 30), -280f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(0f, 0f);
+                        break;
+                    case ERaidKillPreset.BottomRight:
+                        raidKillrectTransform.localPosition = new Vector2((Screen.width / 2) - 30, -420.0f) + AHitmarkerPlugin.RaidKillPosition.Value;
+                        raidKillrectTransform.pivot = new Vector2(1f, 0f);
+                        break;
+                }
             }
         }
-        public void UpdateMultiKillfeed(object sender, EventArgs e)
+        public static void UpdateMultiKillfeed(object sender, EventArgs e)
         {
             if (multiKillfeedrectTransform != null && horizontalLayoutGroup != null)
             {
@@ -1676,6 +1702,11 @@ namespace AmandsHitmarker
             }
             else
             {
+                foreach (AmandsAnimatedImage amandsAnimatedImage in AmandsHitmarkerClass.amandsAnimatedImages)
+                {
+                    amandsAnimatedImage.Opacity = 1f;
+                    amandsAnimatedImage.UpdateOpacity = true;
+                }
                 Destroy(gameObject);
             }
         }
@@ -1705,6 +1736,10 @@ namespace AmandsHitmarker
                     if (this == AmandsHitmarkerClass.LastAmandsKillfeedText)
                     {
                         AmandsHitmarkerClass.killListGameObject.DestroyAllChildren();
+                    }
+                    else
+                    {
+                        Destroy(gameObject);
                     }
                 }
             }
@@ -1774,6 +1809,10 @@ namespace AmandsHitmarker
                     {
                         AmandsHitmarkerClass.raidKillListGameObject.DestroyAllChildren();
                     }
+                    else
+                    {
+                        Destroy(gameObject);
+                    }
                 }
             }
             else if (UpdateStartOpacity && StartOpacity < 1f)
@@ -1806,6 +1845,7 @@ namespace AmandsHitmarker
                     image.raycastTarget = false;
                     image.color = color;
                     if (!AHitmarkerPlugin.EnableKillfeed.Value) WaitAndStart();
+                    WaitAndStart2();
                 }
                 else
                 {
@@ -1822,6 +1862,11 @@ namespace AmandsHitmarker
         private async void WaitAndStart()
         {
             await Task.Delay((int)(Math.Min(20f, AHitmarkerPlugin.KillTime.Value) * 1000));
+            UpdateOpacity = true;
+        }
+        private async void WaitAndStart2()
+        {
+            await Task.Delay(60000);
             UpdateOpacity = true;
         }
         public void Update()
