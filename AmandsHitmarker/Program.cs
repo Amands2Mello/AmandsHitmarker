@@ -13,7 +13,7 @@ using System;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.0")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.1")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -89,8 +89,7 @@ namespace AmandsHitmarker
         public static ConfigEntry<int> KillChildSpacing { get; set; }
         public static ConfigEntry<EKillPreset> KillPreset { get; set; }
         public static ConfigEntry<bool> KillChildDirection { get; set; }
-        public static ConfigEntry<Vector2> KillRectPosition { get; set; }
-        public static ConfigEntry<Vector2> KillRectPivot { get; set; }
+        public static ConfigEntry<Vector2> KillPosition { get; set; }
         public static ConfigEntry<TextAlignmentOptions> KillTextAlignment { get; set; }
         public static ConfigEntry<float> KillFontOutline { get; set; }
         public static ConfigEntry<bool> KillFontUpperCase { get; set; }
@@ -128,8 +127,7 @@ namespace AmandsHitmarker
         public static ConfigEntry<int> RaidKillChildSpacing { get; set; }
         public static ConfigEntry<ERaidKillPreset> RaidKillPreset { get; set; }
         public static ConfigEntry<bool> RaidKillChildDirection { get; set; }
-        public static ConfigEntry<Vector2> RaidKillRectPosition { get; set; }
-        public static ConfigEntry<Vector2> RaidKillRectPivot { get; set; }
+        public static ConfigEntry<Vector2> RaidKillPosition { get; set; }
         public static ConfigEntry<TextAlignmentOptions> RaidKillTextAlignment { get; set; }
 
         public static ConfigEntry<bool> EnableDamageNumber { get; set; }
@@ -220,8 +218,7 @@ namespace AmandsHitmarker
             KillFontUpperCase = Config.Bind<bool>("AmandsKillfeed", "FontUpperCase", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 150, IsAdvanced = true }));
             KillChildSpacing = Config.Bind<int>("AmandsKillfeed", "TextSpacing", -26, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 240 }));
             KillPreset = Config.Bind<EKillPreset>("AmandsKillfeed", "Preset", EKillPreset.Center, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 230 }));
-            KillRectPosition = Config.Bind<Vector2>("AmandsKillfeed", "RectPosition", new Vector2(0f, -250f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 220 }));
-            KillRectPivot = Config.Bind<Vector2>("AmandsKillfeed", "RectPivot", new Vector2(0.5f, 1f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 210, IsAdvanced = true }));
+            KillPosition = Config.Bind<Vector2>("AmandsKillfeed", "Position", new Vector2(0f, 0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 220 }));
             KillChildDirection = Config.Bind<bool>("AmandsKillfeed", "Invert TextDirection", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 200, IsAdvanced = true }));
             KillTextAlignment = Config.Bind<TextAlignmentOptions>("AmandsKillfeed", "TextAlignment", TextAlignmentOptions.Right, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 190, IsAdvanced = true }));
             KillTime = Config.Bind<float>("AmandsKillfeed", "Time", 3f, new ConfigDescription("", new AcceptableValueRange<float>(0.1f, 20.0f), new ConfigurationManagerAttributes { Order = 180 }));
@@ -258,8 +255,7 @@ namespace AmandsHitmarker
             RaidKillChildSpacing = Config.Bind<int>("AmandsRaidKillfeed", "TextSpacing", -28, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 160 }));
             RaidKillPreset = Config.Bind<ERaidKillPreset>("AmandsRaidKillfeed", "Preset", ERaidKillPreset.BottomLeft, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 150 }));
             RaidKillChildDirection = Config.Bind<bool>("AmandsRaidKillfeed", "Invert TextDirection", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 140, IsAdvanced = true }));
-            RaidKillRectPosition = Config.Bind<Vector2>("AmandsRaidKillfeed", "RectPosition", new Vector2(-((Screen.width / 2) - 30), -280f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130 }));
-            RaidKillRectPivot = Config.Bind<Vector2>("AmandsRaidKillfeed", "RectPivot", new Vector2(0f, 0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120, IsAdvanced = true }));
+            RaidKillPosition = Config.Bind<Vector2>("AmandsRaidKillfeed", "Position", new Vector2(0f, 0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130 }));
             RaidKillTextAlignment = Config.Bind<TextAlignmentOptions>("AmandsRaidKillfeed", "TextAlignment", TextAlignmentOptions.Left, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110, IsAdvanced = true }));
 
             EnableDamageNumber = Config.Bind<bool>("AmandsHitmarker DamageNumber", "EnableDamageNumber", true, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 190 }));
@@ -410,6 +406,7 @@ namespace AmandsHitmarker
         [PatchPostfix]
         private static void PatchPostFix(ref EFT.UI.MenuUI __instance)
         {
+            if (AmandsHitmarkerClass.ActiveUIScreen == __instance.transform.GetChild(0).gameObject) return;
             AmandsHitmarkerClass.ActiveUIScreen = __instance.transform.GetChild(0).gameObject;
             AmandsHitmarkerClass.DestroyGameObjects();
             AmandsHitmarkerClass.CreateGameObjects(__instance.transform.GetChild(0));
@@ -425,6 +422,7 @@ namespace AmandsHitmarker
         [PatchPostfix]
         private static void PatchPostFix(ref EFT.UI.BattleUIScreen __instance)
         {
+            if (AmandsHitmarkerClass.ActiveUIScreen == __instance.gameObject) return;
             AmandsHitmarkerClass.ActiveUIScreen = __instance.gameObject;
             AmandsHitmarkerClass.DestroyGameObjects();
             AmandsHitmarkerClass.CreateGameObjects(__instance.transform);
