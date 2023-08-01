@@ -10,6 +10,7 @@ using HarmonyLib;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
+using EFT.UI;
 
 namespace AmandsHitmarker
 {
@@ -392,6 +393,7 @@ namespace AmandsHitmarker
             if (localPlayer != null && localPlayer.IsYourPlayer)
             {
                 AmandsHitmarkerClass.localPlayer = localPlayer;
+                AmandsHitmarkerClass.localPlayerNickname = localPlayer.Profile.Nickname;
                 AmandsHitmarkerClass.PlayerSuperior = localPlayer.gameObject;
                 AmandsHitmarkerClass.Kills = 0;
             }
@@ -452,7 +454,23 @@ namespace AmandsHitmarker
         [PatchPostfix]
         private static void PatchPostFix(ref Player __instance, DamageInfo damageInfo, EBodyPart bodyPartType)
         {
-            if (AmandsHitmarkerClass.localPlayer != null && damageInfo.Player == AmandsHitmarkerClass.localPlayer)
+            // Temporary old version support code
+            bool IsYourPlayerAgresssor = false;
+            Player player = Traverse.Create(damageInfo).Field("Player").GetValue<object>() as Player;
+            if (player != null)
+            {
+                IsYourPlayerAgresssor = AmandsHitmarkerClass.localPlayer != null && player == AmandsHitmarkerClass.localPlayer;
+            }
+            else
+            {
+                object playerObject = Traverse.Create(damageInfo).Field("Player").GetValue<object>();
+                if (playerObject != null)
+                {
+                    string Nickname = Traverse.Create(playerObject).Property("Nickname").GetValue<string>();
+                    IsYourPlayerAgresssor = Nickname == AmandsHitmarkerClass.localPlayerNickname;
+                }
+            }
+            if (IsYourPlayerAgresssor)
             {
                 AmandsHitmarkerClass.hitmarker = true;
                 AmandsHitmarkerClass.damageInfo = damageInfo;
@@ -487,9 +505,26 @@ namespace AmandsHitmarker
         [PatchPrefix]
         private static void PatchPrefix(ref Player __instance, DamageInfo damageInfo)
         {
-            if (AmandsHitmarkerClass.localPlayer != null && damageInfo.Player == AmandsHitmarkerClass.localPlayer && !__instance.IsYourPlayer)
+            // Temporary old version support code
+            Player player = Traverse.Create(damageInfo).Field("Player").GetValue<object>() as Player;
+            if (player != null)
             {
-                AHitmarkerPlugin.PlayerProceedDamageThroughArmor = __instance;
+                if (AmandsHitmarkerClass.localPlayer != null && player == AmandsHitmarkerClass.localPlayer && !__instance.IsYourPlayer)
+                {
+                    AHitmarkerPlugin.PlayerProceedDamageThroughArmor = __instance;
+                }
+            }
+            else
+            {
+                object playerObject = Traverse.Create(damageInfo).Field("Player").GetValue<object>();
+                if (playerObject != null)
+                {
+                    string Nickname = Traverse.Create(playerObject).Property("Nickname").GetValue<string>();
+                    if (Nickname == AmandsHitmarkerClass.localPlayerNickname)
+                    {
+                        AHitmarkerPlugin.PlayerProceedDamageThroughArmor = __instance;
+                    }
+                }
             }
         }
     }
