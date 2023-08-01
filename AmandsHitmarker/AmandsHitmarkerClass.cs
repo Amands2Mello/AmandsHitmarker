@@ -63,6 +63,7 @@ namespace AmandsHitmarker
         public static Dictionary<string, AudioClip> LoadedAudioClips = new Dictionary<string, AudioClip>();
         private static Sprite sprite;
         public static LocalPlayer localPlayer;
+        public static string localPlayerNickname;
         public static GameObject PlayerSuperior;
         public static FirearmController firearmController;
         public static SSAA FPSCameraSSAA;
