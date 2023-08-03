@@ -14,7 +14,7 @@ using EFT.UI;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.1")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.3")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
