@@ -10,6 +10,7 @@ using Comfort.Common;
 using TMPro;
 using static EFT.Player;
 using HarmonyLib;
+using EFT.UI;
 
 namespace AmandsHitmarker
 {
@@ -439,7 +440,7 @@ namespace AmandsHitmarker
                 }
                 if (AHitmarkerPlugin.EnableSounds.Value && Singleton<BetterAudio>.Instance != null && !DebugMode)
                 {
-                    Singleton<BetterAudio>.Instance.PlayNonspatial(audioClip, BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                    Singleton<BetterAudio>.Instance.PlayNonspatial(audioClip, BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
                 }
             }
             if (UpdateHitmarker)
@@ -1491,35 +1492,35 @@ namespace AmandsHitmarker
         {
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void HeadshotHitmarkerSoundDebug(object sender, EventArgs e)
         {
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void KillHitmarkerSoundDebug(object sender, EventArgs e)
         {
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void ArmorSoundDebug(object sender, EventArgs e)
         {
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void ArmorBreakSoundDebug(object sender, EventArgs e)
         {
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value], BetterAudio.AudioSourceGroupType.NonspatialBypass, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void ReloadFilesDebug(object sender, EventArgs e)
