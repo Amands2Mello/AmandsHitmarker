@@ -14,7 +14,7 @@ using EFT.UI;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.3")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.4")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -46,6 +46,8 @@ namespace AmandsHitmarker
         public static ConfigEntry<string> KillHitmarkerSound { get; set; }
         public static ConfigEntry<string> ArmorSound { get; set; }
         public static ConfigEntry<string> ArmorBreakSound { get; set; }
+        public static ConfigEntry<float> StartDistance { get; set; }
+        public static ConfigEntry<float> EndDistance { get; set; }
 
         public static ConfigEntry<Color> HitmarkerColor { get; set; }
         public static ConfigEntry<Color> ArmorColor { get; set; }
@@ -55,6 +57,8 @@ namespace AmandsHitmarker
         public static ConfigEntry<Color> ThrowWeaponColor { get; set; }
         public static ConfigEntry<Color> FollowerColor { get; set; }
         public static ConfigEntry<Color> BossColor { get; set; }
+        public static ConfigEntry<Color> RaiderColor { get; set; }
+        public static ConfigEntry<Color> BloodhoundColor { get; set; }
         public static ConfigEntry<Color> BleedColor { get; set; }
         public static ConfigEntry<Color> PoisonColor { get; set; }
 
@@ -70,6 +74,7 @@ namespace AmandsHitmarker
         public static ConfigEntry<string> ThrowWeaponHitmarkerButton { get; set; }
         public static ConfigEntry<string> FollowerHitmarkerButton { get; set; }
         public static ConfigEntry<string> BossHitmarkerButton { get; set; }
+        public static ConfigEntry<string> RaiderHitmarkerButton { get; set; }
         public static ConfigEntry<string> DamageNumberButton { get; set; }
         public static ConfigEntry<string> HitmarkerSoundButton { get; set; }
         public static ConfigEntry<string> HeadshotHitmarkerSoundButton { get; set; }
@@ -144,6 +149,7 @@ namespace AmandsHitmarker
             Debug.LogError("AmandsHitmarker Awake()");
             Hook = new GameObject();
             AmandsHitmarkerClassComponent = Hook.AddComponent<AmandsHitmarkerClass>();
+            AmandsHitmarkerClass.HitmarkerAudioSource = Hook.AddComponent<AudioSource>();
             DontDestroyOnLoad(Hook);
         }
         private void Start()
@@ -174,6 +180,8 @@ namespace AmandsHitmarker
             KillHitmarkerSound = Config.Bind<string>("AmandsHitmarker", "KillHitmarkerSound", "KillHitmarker.wav", new ConfigDescription("Supported Files WAV OGG", null, new ConfigurationManagerAttributes { Order = 110 }));
             ArmorSound = Config.Bind<string>("AmandsHitmarker", "ArmorSound", "Armor.wav", new ConfigDescription("Supported Files WAV OGG", null, new ConfigurationManagerAttributes { Order = 106 }));
             ArmorBreakSound = Config.Bind<string>("AmandsHitmarker", "ArmorBreakSound", "ArmorBreak.wav", new ConfigDescription("Supported Files WAV OGG", null, new ConfigurationManagerAttributes { Order = 102 }));
+            StartDistance = Config.Bind<float>("AmandsHitmarker", "StartDistance", -1.0f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 100, IsAdvanced = true }));
+            EndDistance = Config.Bind<float>("AmandsHitmarker", "EndDIstance", 10000000.0f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 98, IsAdvanced = true }));
 
             HitmarkerColor = Config.Bind<Color>("Colors", "HitmarkerColor", new Color(0.84f, 0.88f, 0.95f, 1f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 180 }));
             ArmorColor = Config.Bind<Color>("Colors", "ArmorColor", new Color(0.2826087f, 0.6086956f, 1.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 170 }));
@@ -183,6 +191,8 @@ namespace AmandsHitmarker
             ThrowWeaponColor = Config.Bind<Color>("Colors", "ThrowWeaponColor", new Color(0.4130435f, 0.0f, 1.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130 }));
             FollowerColor = Config.Bind<Color>("Colors", "FollowerColor", new Color(1.0f, 0.8043478f, 0.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 124 }));
             BossColor = Config.Bind<Color>("Colors", "BossColor", new Color(1.0f, 0.8043478f, 0.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120 }));
+            RaiderColor = Config.Bind<Color>("Colors", "RaiderColor", new Color(1.0f, 0.8043478f, 0.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 118 }));
+            BloodhoundColor = Config.Bind<Color>("Colors", "BloodhoundColor", new Color(1.0f, 0.0f, 0.0f, 1.0f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 116 }));
             BleedColor = Config.Bind<Color>("Colors", "BleedColor", new Color(1.0f, 0.0f, 0.0f, 0.69f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110 }));
             PoisonColor = Config.Bind<Color>("Colors", "PoisonColor", new Color(0.0f, 1.0f, 0.0f, 0.69f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 106, IsAdvanced = true }));
 
@@ -198,6 +208,7 @@ namespace AmandsHitmarker
             ThrowWeaponHitmarkerButton = Config.Bind<string>("Debug", "ThrowWeaponHitmarkerButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 190, HideSettingName = true, CustomDrawer = ThrowWeaponHitmarkerButtonDrawer }));
             FollowerHitmarkerButton = Config.Bind<string>("Debug", "FollowerHitmarkerButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 180, HideSettingName = true, CustomDrawer = FollowerHitmarkerButtonDrawer }));
             BossHitmarkerButton = Config.Bind<string>("Debug", "BossHitmarkerButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 170, HideSettingName = true, CustomDrawer = BossHitmarkerButtonDrawer }));
+            RaiderHitmarkerButton = Config.Bind<string>("Debug", "RaiderHitmarkerButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 170, HideSettingName = true, CustomDrawer = RaiderHitmarkerButtonDrawer }));
             DamageNumberButton = Config.Bind<string>("Debug", "DamageNumberButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 168, HideSettingName = true, CustomDrawer = DamageNumberDrawer }));
             HitmarkerSoundButton = Config.Bind<string>("Debug", "HitmarkerSoundButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 160, HideSettingName = true, CustomDrawer = HitmarkerSoundButtonDrawer }));
             HeadshotHitmarkerSoundButton = Config.Bind<string>("Debug", "HeadshotHitmarkerSoundButton", "", new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 150, HideSettingName = true, CustomDrawer = HeadshotHitmarkerSoundButtonDrawer }));
@@ -339,6 +350,11 @@ namespace AmandsHitmarker
             bool button = GUILayout.Button("BossHitmarker", GUILayout.ExpandWidth(true));
             if (button) AmandsHitmarkerClass.BossHitmarkerDebug(null, null);
         }
+        private static void RaiderHitmarkerButtonDrawer(ConfigEntryBase entry)
+        {
+            bool button = GUILayout.Button("RaiderHitmarker", GUILayout.ExpandWidth(true));
+            if (button) AmandsHitmarkerClass.RaiderHitmarkerDebug(null, null);
+        }
         private static void DamageNumberDrawer(ConfigEntryBase entry)
         {
             bool button = GUILayout.Button("DamageNumber", GUILayout.ExpandWidth(true));
@@ -396,6 +412,8 @@ namespace AmandsHitmarker
                 AmandsHitmarkerClass.localPlayerNickname = localPlayer.Profile.Nickname;
                 AmandsHitmarkerClass.PlayerSuperior = localPlayer.gameObject;
                 AmandsHitmarkerClass.Kills = 0;
+                AmandsHitmarkerClass.ReloadFiles();
+                AmandsHitmarkerClass.CanDebugReloadFiles = true;
             }
         }
     }
@@ -466,12 +484,22 @@ namespace AmandsHitmarker
                 object playerObject = Traverse.Create(damageInfo).Field("Player").GetValue<object>();
                 if (playerObject != null)
                 {
-                    string Nickname = Traverse.Create(playerObject).Property("Nickname").GetValue<string>();
-                    IsYourPlayerAgresssor = Nickname == AmandsHitmarkerClass.localPlayerNickname;
+                    string AggressorNickname = Traverse.Create(playerObject).Property("Nickname").GetValue<string>();
+                    IsYourPlayerAgresssor = AggressorNickname == AmandsHitmarkerClass.localPlayerNickname;
                 }
             }
             if (IsYourPlayerAgresssor)
             {
+                if (AmandsHitmarkerClass.localPlayer != null)
+                {
+                    float distance = Vector3.Distance(AmandsHitmarkerClass.localPlayer.Position, __instance.Position);
+                    if (distance < AHitmarkerPlugin.StartDistance.Value || distance > AHitmarkerPlugin.EndDistance.Value)
+                    {
+                        AmandsHitmarkerClass.armorHitmarker = false;
+                        AmandsHitmarkerClass.armorBreak = false;
+                        return;
+                    }
+                }
                 AmandsHitmarkerClass.hitmarker = true;
                 AmandsHitmarkerClass.damageInfo = damageInfo;
                 AmandsHitmarkerClass.bodyPart = bodyPartType;
@@ -563,6 +591,8 @@ namespace AmandsHitmarker
         {
             if (AmandsHitmarkerClass.localPlayer != null && aggressor == AmandsHitmarkerClass.localPlayer && __instance != AmandsHitmarkerClass.localPlayer)
             {
+                float distance = Vector3.Distance(aggressor.Position, __instance.Position);
+                if (distance < AHitmarkerPlugin.StartDistance.Value || distance > AHitmarkerPlugin.EndDistance.Value) return;
                 AmandsHitmarkerClass.killHitmarker = true;
                 AmandsHitmarkerClass.killDamageInfo = damageInfo;
                 AmandsHitmarkerClass.killBodyPart = bodyPart;
@@ -570,7 +600,7 @@ namespace AmandsHitmarker
                 AmandsHitmarkerClass.killExperience = Traverse.Create(Traverse.Create(__instance.Profile.Info).Field("Settings").GetValue<object>()).Field("Experience").GetValue<int>();
                 AmandsHitmarkerClass.killPlayerName = __instance.Profile.Nickname;
                 AmandsHitmarkerClass.killPlayerSide = __instance.Side;
-                AmandsHitmarkerClass.killDistance = Vector3.Distance(aggressor.Position, __instance.Position);
+                AmandsHitmarkerClass.killDistance = distance;
                 AmandsHitmarkerClass.killLethalDamageType = lethalDamageType;
                 AmandsHitmarkerClass.killLevel = __instance.Profile.Info.Level;
                 AmandsHitmarkerClass.killWeaponName = damageInfo.Weapon == null ? "?" : AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName,0);
