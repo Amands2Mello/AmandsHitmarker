@@ -16,6 +16,8 @@ namespace AmandsHitmarker
 {
     public class AmandsHitmarkerClass : MonoBehaviour
     {
+        public static AudioSource HitmarkerAudioSource;
+        public static bool CanDebugReloadFiles;
         public static GameObject killListGameObject;
         public static AmandsKillfeedText LastAmandsKillfeedText;
         public static bool hitmarker;
@@ -193,6 +195,7 @@ namespace AmandsHitmarker
             AHitmarkerPlugin.ThrowWeaponColor.SettingChanged += ThrowWeaponHitmarkerDebug;
             AHitmarkerPlugin.FollowerColor.SettingChanged += FollowerHitmarkerDebug;
             AHitmarkerPlugin.BossColor.SettingChanged += BossHitmarkerDebug;
+            AHitmarkerPlugin.RaiderColor.SettingChanged += BossHitmarkerDebug;
             AHitmarkerPlugin.BleedColor.SettingChanged += BleedHitmarkerDebug;
             AHitmarkerPlugin.PoisonColor.SettingChanged += PoisonHitmarkerDebug;
 
@@ -369,8 +372,20 @@ namespace AmandsHitmarker
                     }
                     if (killPlayerSide == EPlayerSide.Savage)
                     {
-                        if (AmandsHitmarkerHelper.IsFollower(killRole)) HitmarkerColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole)) HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
+                        string RoleName = AmandsHitmarkerHelper.Localized(AmandsHitmarkerHelper.GetScavRoleKey(killRole), EStringCase.Upper);
+                        switch (RoleName)
+                        {
+                            case "BLOODHOUND":
+                                HitmarkerColor = AHitmarkerPlugin.BloodhoundColor.Value;
+                                break;
+                            case "RAIDER":
+                                HitmarkerColor = AHitmarkerPlugin.RaiderColor.Value;
+                                break;
+                            default:
+                                if (AmandsHitmarkerHelper.IsFollower(killRole)) HitmarkerColor = AHitmarkerPlugin.FollowerColor.Value;
+                                if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole)) HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
+                                break;
+                        }
                     }
                     switch (killLethalDamageType)
                     {
@@ -438,9 +453,10 @@ namespace AmandsHitmarker
                     HitmarkerTime = 0.0f;
                     UpdateHitmarker = true;
                 }
-                if (AHitmarkerPlugin.EnableSounds.Value && Singleton<BetterAudio>.Instance != null && !DebugMode)
+                if (AHitmarkerPlugin.EnableSounds.Value && !DebugMode)// Singleton<BetterAudio>.Instance != null && !DebugMode)
                 {
-                    Singleton<BetterAudio>.Instance.PlayNonspatial(audioClip, BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                    //Singleton<BetterAudio>.Instance.PlayNonspatial(audioClip, BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                    HitmarkerAudioSource.PlayOneShot(audioClip, AHitmarkerPlugin.SoundVolume.Value);
                 }
             }
             if (UpdateHitmarker)
@@ -693,11 +709,23 @@ namespace AmandsHitmarker
             }
             if (killPlayerSide == EPlayerSide.Savage)
             {
-                if (AmandsHitmarkerHelper.IsFollower(killRole) && AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.FollowerColor.Value;
-                if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole))
+                string RoleName = AmandsHitmarkerHelper.Localized(AmandsHitmarkerHelper.GetScavRoleKey(killRole), EStringCase.Upper);
+                switch (RoleName)
                 {
-                    if (AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.BossColor.Value;
-                    sprite = LoadedSprites[AHitmarkerPlugin.MultiKillfeedGenericShape.Value];
+                    case "BLOODHOUND":
+                        if (AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.BloodhoundColor.Value;
+                        break;
+                    case "RAIDER":
+                        if (AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.RaiderColor.Value;
+                        break;
+                    default:
+                        if (AmandsHitmarkerHelper.IsFollower(killRole) && AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.FollowerColor.Value;
+                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole))
+                        {
+                            if (AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.BossColor.Value;
+                            sprite = LoadedSprites[AHitmarkerPlugin.MultiKillfeedGenericShape.Value];
+                        }
+                        break;
                 }
             }
             GameObject amandsAnimatedImageGameObject = new GameObject("Multikill");
@@ -887,11 +915,11 @@ namespace AmandsHitmarker
                     KillfeedColor = AHitmarkerPlugin.ThrowWeaponColor.Value;
                     break;
             }
-            if (killPlayerSide == EPlayerSide.Savage)
+            /*if (killPlayerSide == EPlayerSide.Savage)
             {
                 if (AmandsHitmarkerHelper.IsFollower(killRole)) KillfeedColor = AHitmarkerPlugin.FollowerColor.Value;
                 if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole)) KillfeedColor = AHitmarkerPlugin.BossColor.Value;
-            }
+            }*/
             string Start = "";
             string RoleName = "";
             Color RoleColor = Color.white;
@@ -914,8 +942,22 @@ namespace AmandsHitmarker
             if (killPlayerSide == EPlayerSide.Savage)
             {
                 RoleName = AmandsHitmarkerHelper.Localized(AmandsHitmarkerHelper.GetScavRoleKey(killRole), EStringCase.Upper);
-                if (AmandsHitmarkerHelper.IsFollower(killRole)) RoleColor = AHitmarkerPlugin.FollowerColor.Value;
-                if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole)) RoleColor = AHitmarkerPlugin.BossColor.Value;
+                switch (RoleName)
+                {
+                    case "BLOODHOUND":
+                        RoleColor = AHitmarkerPlugin.BloodhoundColor.Value;
+                        KillfeedColor = RoleColor;
+                        break;
+                    case "RAIDER":
+                        RoleColor = AHitmarkerPlugin.RaiderColor.Value;
+                        KillfeedColor = RoleColor;
+                        break;
+                    default:
+                        if (AmandsHitmarkerHelper.IsFollower(killRole)) RoleColor = AHitmarkerPlugin.FollowerColor.Value;
+                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole)) RoleColor = AHitmarkerPlugin.BossColor.Value;
+                        KillfeedColor = RoleColor;
+                        break;
+                }
             }
             switch (AHitmarkerPlugin.KillNameColor.Value)
             {
@@ -1081,8 +1123,19 @@ namespace AmandsHitmarker
             if (aggressorSide == EPlayerSide.Savage)
             {
                 aggressorRoleName = AmandsHitmarkerHelper.Localized(AmandsHitmarkerHelper.GetScavRoleKey(aggressorRole), EStringCase.Upper);
-                if (AmandsHitmarkerHelper.IsFollower(aggressorRole)) aggressorColor = AHitmarkerPlugin.FollowerColor.Value;
-                if (AmandsHitmarkerHelper.IsBoss(aggressorRole) || AmandsHitmarkerHelper.CountAsBoss(aggressorRole)) aggressorColor = AHitmarkerPlugin.BossColor.Value;
+                switch (aggressorRoleName)
+                {
+                    case "BLOODHOUND":
+                        aggressorColor = AHitmarkerPlugin.BloodhoundColor.Value;
+                        break;
+                    case "RAIDER":
+                        aggressorColor = AHitmarkerPlugin.RaiderColor.Value;
+                        break;
+                    default:
+                        if (AmandsHitmarkerHelper.IsFollower(aggressorRole)) aggressorColor = AHitmarkerPlugin.FollowerColor.Value;
+                        if (AmandsHitmarkerHelper.IsBoss(aggressorRole) || AmandsHitmarkerHelper.CountAsBoss(aggressorRole)) aggressorColor = AHitmarkerPlugin.BossColor.Value;
+                        break;
+                }
             }
             string End;
             string victimRoleName = "";
@@ -1104,8 +1157,19 @@ namespace AmandsHitmarker
             if (victimSide == EPlayerSide.Savage)
             {
                 victimRoleName = AmandsHitmarkerHelper.Localized(AmandsHitmarkerHelper.GetScavRoleKey(victimRole), EStringCase.Upper);
-                if (AmandsHitmarkerHelper.IsFollower(victimRole)) victimColor = AHitmarkerPlugin.FollowerColor.Value;
-                if (AmandsHitmarkerHelper.IsBoss(victimRole) || AmandsHitmarkerHelper.CountAsBoss(victimRole)) victimColor = AHitmarkerPlugin.BossColor.Value;
+                switch (victimRoleName)
+                {
+                    case "BLOODHOUND":
+                        victimColor = AHitmarkerPlugin.BloodhoundColor.Value;
+                        break;
+                    case "RAIDER":
+                        victimColor = AHitmarkerPlugin.RaiderColor.Value;
+                        break;
+                    default:
+                        if (AmandsHitmarkerHelper.IsFollower(victimRole)) victimColor = AHitmarkerPlugin.FollowerColor.Value;
+                        if (AmandsHitmarkerHelper.IsBoss(victimRole) || AmandsHitmarkerHelper.CountAsBoss(victimRole)) victimColor = AHitmarkerPlugin.BossColor.Value;
+                        break;
+                }
             }
 
             switch (AHitmarkerPlugin.RaidKillNameColor.Value)
@@ -1458,6 +1522,28 @@ namespace AmandsHitmarker
             MultiKillfeed();
             RaidKillfeed(EPlayerSide.Usec, WildSpawnType.bossKnight, aggNickname, killWeaponName, EDamageType.Bullet, EPlayerSide.Savage, WildSpawnType.bossKnight, killPlayerName);
         }
+        public static void RaiderHitmarkerDebug(object sender, EventArgs e)
+        {
+            DebugOffset = new Vector3(600, 0, 0);
+            DebugMode = true;
+            killRole = WildSpawnType.pmcBot;
+            killPlayerSide = EPlayerSide.Savage;
+            killExperience = 100;
+            killDistance = 25;
+            System.Random rnd = new System.Random();
+            killWeaponName = DebugWeapons[rnd.Next(DebugWeapons.Count)];
+            killPlayerName = DebugNames[rnd.Next(DebugNames.Count)];
+            aggNickname = DebugNames[rnd.Next(DebugNames.Count)];
+            bodyPart = EBodyPart.Chest;
+            killBodyPart = EBodyPart.Chest;
+            killLethalDamageType = EDamageType.Bullet;
+            killLevel = (int)UnityEngine.Random.Range(1, 80);
+            hitmarker = ActiveUIScreen != null;
+            killHitmarker = ActiveUIScreen != null;
+            Killfeed();
+            MultiKillfeed();
+            RaidKillfeed(EPlayerSide.Usec, WildSpawnType.bossKnight, aggNickname, killWeaponName, EDamageType.Bullet, EPlayerSide.Savage, WildSpawnType.pmcBot, killPlayerName);
+        }
         public static void DamageNumberDebug(object sender, EventArgs e)
         {
             DebugOffset = new Vector3(600, 0, 0);
@@ -1490,37 +1576,67 @@ namespace AmandsHitmarker
         }
         public static void HitmarkerSoundDebug(object sender, EventArgs e)
         {
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                if (CanDebugReloadFiles && localPlayer == null)
+                {
+                    CanDebugReloadFiles = false;
+                    ReloadFiles();
+                }
+                HitmarkerAudioSource.PlayOneShot(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value], AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void HeadshotHitmarkerSoundDebug(object sender, EventArgs e)
         {
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                if (CanDebugReloadFiles && localPlayer == null)
+                {
+                    CanDebugReloadFiles = false;
+                    ReloadFiles();
+                }
+                HitmarkerAudioSource.PlayOneShot(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value], AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void KillHitmarkerSoundDebug(object sender, EventArgs e)
         {
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                if (CanDebugReloadFiles && localPlayer == null)
+                {
+                    CanDebugReloadFiles = false;
+                    ReloadFiles();
+                }
+                HitmarkerAudioSource.PlayOneShot(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value], AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void ArmorSoundDebug(object sender, EventArgs e)
         {
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                if (CanDebugReloadFiles && localPlayer == null)
+                {
+                    CanDebugReloadFiles = false;
+                    ReloadFiles();
+                }
+                HitmarkerAudioSource.PlayOneShot(LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value], AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void ArmorBreakSoundDebug(object sender, EventArgs e)
         {
-            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value) && Singleton<BetterAudio>.Instance != null)
+            if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
-                Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
+                if (CanDebugReloadFiles && localPlayer == null)
+                {
+                    CanDebugReloadFiles = false;
+                    ReloadFiles();
+                }
+                HitmarkerAudioSource.PlayOneShot(LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value], AHitmarkerPlugin.SoundVolume.Value);
             }
         }
         public static void ReloadFilesDebug(object sender, EventArgs e)
