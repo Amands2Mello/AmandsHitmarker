@@ -14,7 +14,7 @@ using EFT.UI;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.4")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.5")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -144,6 +144,12 @@ namespace AmandsHitmarker
         public static ConfigEntry<float> DamageFontOutline { get; set; }
         public static ConfigEntry<Vector2> DamageRectPosition { get; set; }
         public static ConfigEntry<Vector2> DamageRectPivot { get; set; }
+
+        public static ConfigEntry<bool> EnableDamageIndicator { get; set; }
+        public static ConfigEntry<Color> DamageIndicatorColor { get; set; }
+        public static ConfigEntry<float> DamageIndicatorSize { get; set; }
+        public static ConfigEntry<float> DamageIndicatorOffset { get; set; }
+
         private void Awake()
         {
             Debug.LogError("AmandsHitmarker Awake()");
@@ -278,6 +284,11 @@ namespace AmandsHitmarker
             DamageFontOutline = Config.Bind<float>("AmandsHitmarker DamageNumber", "FontOutline", 0.01f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 140, IsAdvanced = true }));
             DamageRectPosition = Config.Bind<Vector2>("AmandsHitmarker DamageNumber", "RectPosition", new Vector2(0f, -100f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 130 }));
             DamageRectPivot = Config.Bind<Vector2>("AmandsHitmarker DamageNumber", "RectPivot", new Vector2(0.5f, 0.5f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 120, IsAdvanced = true }));
+
+            EnableDamageIndicator = Config.Bind<bool>("AmandsDamageIndicator", "EnableDamageIndicator", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 110 }));
+            DamageIndicatorColor = Config.Bind<Color>("AmandsDamageIndicator", "DamageIndicatorColor", new Color(1f, 0f, 0.0f, 1f), new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 100 }));
+            DamageIndicatorSize = Config.Bind<float>("AmandsDamageIndicator", "DamageIndicatorSize", 0.7f, new ConfigDescription("", new AcceptableValueRange<float>(0.1f, 2.0f), new ConfigurationManagerAttributes { Order = 90, IsAdvanced = true }));
+            DamageIndicatorOffset = Config.Bind<float>("AmandsDamageIndicator", "DamageIndicatorOffset", 350f, new ConfigDescription("", null, new ConfigurationManagerAttributes { Order = 80, IsAdvanced = true }));
 
             new AmandsDamagePatch().Enable();
             new AmandsArmorDamagePatch().Enable();
@@ -520,6 +531,13 @@ namespace AmandsHitmarker
                     AmandsHitmarkerClass.damageNumberTextMeshPro.color = AHitmarkerPlugin.HitmarkerColor.Value;
                     AmandsHitmarkerClass.damageNumberTextMeshPro.alpha = 1f;
                     AmandsHitmarkerClass.UpdateDamageNumber = false;
+                }
+            }
+            else
+            {
+                if (AmandsHitmarkerClass.localPlayer != null && __instance == AmandsHitmarkerClass.localPlayer && AHitmarkerPlugin.EnableDamageIndicator.Value && AmandsHitmarkerClass.amandsDamageIndicator != null)
+                {
+                    AmandsHitmarkerClass.amandsDamageIndicator.SetLocation(damageInfo.MasterOrigin);
                 }
             }
         }
