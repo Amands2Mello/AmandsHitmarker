@@ -125,6 +125,10 @@ namespace AmandsHitmarker
         public static RectTransform damageNumberRectTransform;
         public static TextMeshProUGUI damageNumberTextMeshPro;
 
+        public static Transform BattleUIScreenTransform;
+
+        public static AmandsDamageIndicator amandsDamageIndicator;
+
         public static bool DebugMode = false;
         public static Vector3 DebugOffset = Vector3.zero;
         public static List<string> DebugWeapons = new List<string>() { "RD-704", "MGSL", "P90", "MCX .300 BLK", "G36 E", "FN 5-7", "AXMC", "SV-98" };
@@ -247,6 +251,11 @@ namespace AmandsHitmarker
             AHitmarkerPlugin.EnableDamageNumber.SettingChanged += DamageNumberDebug;
             AHitmarkerPlugin.EnableArmorDamageNumber.SettingChanged += DamageNumberDebug;
             AHitmarkerPlugin.DamageAnimationTime.SettingChanged += DamageNumberDebug;
+
+            AHitmarkerPlugin.EnableDamageIndicator.SettingChanged += UpdateDamageIndicator;
+            AHitmarkerPlugin.DamageIndicatorColor.SettingChanged += UpdateDamageIndicator;
+            AHitmarkerPlugin.DamageIndicatorOffset.SettingChanged += UpdateDamageIndicator;
+            AHitmarkerPlugin.DamageIndicatorSize.SettingChanged += UpdateDamageIndicator;
 
             keys = new Keyframe[] { new Keyframe(0f, 0f, 0f, 0f, 0.25f, 0.25f), new Keyframe(AHitmarkerPlugin.AnimatedTime.Value / 2, AHitmarkerPlugin.AnimatedAmplitude.Value, 0f, 0f, 0.5f, 0.5f), new Keyframe(AHitmarkerPlugin.AnimatedTime.Value, 0f, 0f, 0f, 0.25f, 0.25f) };
             AlphaKeys = new Keyframe[] { new Keyframe(AHitmarkerPlugin.AnimatedTime.Value, 1f, 0f, 0f, 0.25f, 0.25f), new Keyframe(AHitmarkerPlugin.AnimatedTime.Value + AHitmarkerPlugin.AnimatedAlphaTime.Value, 0f, 0f, 0f, 0.25f, 0.25f) };
@@ -738,6 +747,8 @@ namespace AmandsHitmarker
         }
         public static void CreateGameObjects(Transform parent)
         {
+            BattleUIScreenTransform = parent;
+
             damageNumberGameObject = new GameObject("damageNumber");
             damageNumberRectTransform = damageNumberGameObject.AddComponent<RectTransform>();
             damageNumberGameObject.transform.SetParent(parent);
@@ -856,6 +867,13 @@ namespace AmandsHitmarker
             BRHImage.raycastTarget = false;
             BRHImage.color = Color.clear;
             BRHRect.localRotation = Quaternion.Euler(0, 0, 45);
+
+            if (AHitmarkerPlugin.EnableDamageIndicator.Value)
+            {
+                GameObject damageIndicatorGameObject = new GameObject("DamageIndicator");
+                damageIndicatorGameObject.transform.SetParent(parent.parent);
+                amandsDamageIndicator = damageIndicatorGameObject.AddComponent<AmandsDamageIndicator>();
+            }
         }
         public static void DestroyGameObjects()
         {
@@ -870,6 +888,8 @@ namespace AmandsHitmarker
             if (TRH != null) Destroy(TRH);
             if (BLH != null) Destroy(BLH);
             if (BRH != null) Destroy(BRH);
+
+            if (amandsDamageIndicator) Destroy(amandsDamageIndicator.gameObject);
         }
         public static void CreateUpperText(string text, int fontSize, float time, float OpacitySpeed)
         {
@@ -1304,6 +1324,19 @@ namespace AmandsHitmarker
             {
                 AudioClip audioclip = DownloadHandlerAudioClip.GetContent(www);
                 return audioclip;
+            }
+        }
+        public static void UpdateDamageIndicator(object sender, EventArgs e)
+        {
+            if (amandsDamageIndicator)
+            {
+                amandsDamageIndicator.UpdateDamageIndicator();
+            }
+            else if (AHitmarkerPlugin.EnableDamageIndicator.Value && BattleUIScreenTransform != null)
+            {
+                GameObject damageIndicatorGameObject = new GameObject("DamageIndicator");
+                damageIndicatorGameObject.transform.SetParent(BattleUIScreenTransform.parent);
+                amandsDamageIndicator = damageIndicatorGameObject.AddComponent<AmandsDamageIndicator>();
             }
         }
         public static void HitmarkerDebug(object sender, EventArgs e)
@@ -1998,6 +2031,136 @@ namespace AmandsHitmarker
                     UpdateOpacity = false;
                     AmandsHitmarkerClass.amandsAnimatedImages.Remove(this);
                     Destroy(gameObject);
+                }
+            }
+        }
+    }
+    public class AmandsDamageIndicator : MonoBehaviour
+    {
+        public Vector3 HitLocation;
+
+        public RectTransform anchorRectTransform;
+
+        public GameObject imageGameObject;
+        public RectTransform imageRectTransform;
+        public Image image;
+
+        public GameObject imageGameObject2;
+        public RectTransform imageRectTransform2;
+        public Image image2;
+
+        public Color color = new Color(0.84f, 0.88f, 0.95f, 0f);
+        public float OpacitySpeed = 0.25f;
+        public float OpacitySpeed2 = 0.5f;
+        public float Opacity = 1f;
+        public float Opacity2 = 1f;
+        public bool UpdateOpacity = false;
+        public float Timer = 1f;
+        public bool UpdateTimer = true;
+
+        public void Start()
+        {
+            color = AHitmarkerPlugin.DamageIndicatorColor.Value;
+
+            anchorRectTransform = gameObject.AddComponent<RectTransform>();
+            anchorRectTransform.anchoredPosition = Vector2.zero;
+
+            imageGameObject = new GameObject("DamageIndicatorImage");
+            imageRectTransform = imageGameObject.AddComponent<RectTransform>();
+            imageRectTransform.SetParent(anchorRectTransform);
+            imageRectTransform.anchoredPosition = new Vector2(0, AHitmarkerPlugin.DamageIndicatorOffset.Value);
+            imageRectTransform.sizeDelta = new Vector2(1024, 512) * AHitmarkerPlugin.DamageIndicatorSize.Value;
+            image = imageGameObject.AddComponent<Image>();
+            image.sprite = AmandsHitmarkerClass.LoadedSprites["DamageIndicator.png"];
+            image.raycastTarget = false;
+            image.color = new Color(color.r, color.g, color.b, 0f);
+
+            imageGameObject2 = new GameObject("DamageIndicatorImage");
+            imageRectTransform2 = imageGameObject2.AddComponent<RectTransform>();
+            imageRectTransform2.SetParent(imageRectTransform);
+            imageRectTransform2.anchoredPosition = new Vector2(0, 0);
+            imageRectTransform2.sizeDelta = new Vector2(1024, 512) * AHitmarkerPlugin.DamageIndicatorSize.Value;
+            image2 = imageGameObject2.AddComponent<Image>();
+            image2.sprite = AmandsHitmarkerClass.LoadedSprites["DamageIndicator2.png"];
+            image2.raycastTarget = false;
+            image2.color = new Color(color.r, color.g, color.b, 0f);
+            this.enabled = false;
+        }
+        public void UpdateDamageIndicator()
+        {
+            color = AHitmarkerPlugin.DamageIndicatorColor.Value;
+            if (imageRectTransform != null)
+            {
+                imageRectTransform.anchoredPosition = new Vector2(0, AHitmarkerPlugin.DamageIndicatorOffset.Value);
+                imageRectTransform.sizeDelta = new Vector2(1024, 512) * AHitmarkerPlugin.DamageIndicatorSize.Value;
+            }
+            if (imageRectTransform2 != null)
+            {
+                imageRectTransform2.sizeDelta = new Vector2(1024, 512) * AHitmarkerPlugin.DamageIndicatorSize.Value;
+            }
+        }
+        public void SetLocation(Vector3 Location)
+        {
+            HitLocation = Location;
+
+            Opacity = 1f;
+            Opacity2 = 1f;
+            UpdateOpacity = false;
+            Timer = 0f;
+            UpdateTimer = true;
+            this.enabled = true;
+
+            if (image != null)
+            {
+                image.color = new Color(color.r, color.g, color.b, Opacity);
+            }
+            if (image2 != null)
+            {
+                image2.color = new Color(color.r, color.g, color.b, Opacity2);
+            }
+
+            if (AmandsHitmarkerClass.localPlayer != null)
+            {
+                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.localPlayer.Rotation.x, 0) * Vector3.forward;
+                Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.localPlayer.CameraContainer.transform.position).normalized;
+                float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x), Vector3.Dot(forward, HitDirection)) * Mathf.Rad2Deg;
+                anchorRectTransform.eulerAngles = new Vector3(0, 0, angle);
+            }
+        }
+        public void Update()
+        {
+            if (AmandsHitmarkerClass.localPlayer != null)
+            {
+                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.localPlayer.Rotation.x, 0) * Vector3.forward;
+                Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.localPlayer.CameraContainer.transform.position).normalized;
+                float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x), Vector3.Dot(forward, HitDirection)) * Mathf.Rad2Deg;
+                anchorRectTransform.eulerAngles = new Vector3(0, 0, angle);
+            }
+            if (UpdateOpacity)
+            {
+                Opacity -= Time.deltaTime / OpacitySpeed;
+                if (image != null)
+                {
+                    image.color = new Color(color.r, color.g, color.b, Opacity);
+                }
+                if (Opacity < 0)
+                {
+                    UpdateOpacity = false;
+                    this.enabled = false;
+                }
+            }
+            else if (UpdateTimer)
+            {
+                Timer += Time.deltaTime;
+                Opacity2 -= Time.deltaTime / OpacitySpeed2;
+                if (image2 != null)
+                {
+                    image2.color = new Color(color.r, color.g, color.b, Opacity2);
+                }
+                if (Timer > 2f)
+                {
+                    UpdateTimer = false;
+                    UpdateOpacity = true;
                 }
             }
         }
