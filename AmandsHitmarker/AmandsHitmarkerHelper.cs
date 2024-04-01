@@ -14,7 +14,7 @@ namespace AmandsHitmarker
         private static Type RoleType;
         private static MethodInfo GetScavRoleKeyMethod;
         private static MethodInfo IsFollowerMethod;
-        private static MethodInfo CountAsBossMethod;
+        private static MethodInfo CountAsBossForStatisticsMethod;
         private static MethodInfo IsBossMethod;
 
         private static Type TransliterateType;
@@ -32,7 +32,7 @@ namespace AmandsHitmarker
             RoleType = PatchConstants.EftTypes.Single((Type x) => x.GetMethod("IsBoss", flags) != null && x.GetMethod("Init", flags) != null);
             IsBossMethod = RoleType.GetMethod("IsBoss", flags);
             IsFollowerMethod = RoleType.GetMethod("IsFollower", flags);
-            CountAsBossMethod = RoleType.GetMethod("CountAsBoss", flags);
+            CountAsBossForStatisticsMethod = RoleType.GetMethod("CountAsBossForStatistics", flags);
             GetScavRoleKeyMethod = RoleType.GetMethod("GetScavRoleKey", flags);
 
             TransliterateType = PatchConstants.EftTypes.Single(x => x.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance).Any(t => t.Name == "Transliterate"));
@@ -62,9 +62,9 @@ namespace AmandsHitmarker
                 role
             });
         }
-        public static bool CountAsBoss(WildSpawnType role)
+        public static bool CountAsBossForStatistics(WildSpawnType role)
         {
-            return (bool)CountAsBossMethod.Invoke(null, new object[]
+            return (bool)CountAsBossForStatisticsMethod.Invoke(null, new object[]
             {
                 role
             });
