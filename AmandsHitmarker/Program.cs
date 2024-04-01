@@ -11,10 +11,11 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 using EFT.UI;
+using System.Linq;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.5.5")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.0")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -448,7 +449,7 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(EFT.UI.BattleUIScreen).GetMethod("Show", BindingFlags.Instance | BindingFlags.NonPublic);
+            return typeof(EFT.UI.BattleUIScreen).GetMethods(BindingFlags.Instance | BindingFlags.Public).First(x => x.Name == "Show" && x.GetParameters()[0].Name == "owner");
         }
         [PatchPostfix]
         private static void PatchPostFix(ref EFT.UI.BattleUIScreen __instance)
@@ -546,7 +547,7 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(Player).GetMethod("ProceedDamageThroughArmor", BindingFlags.Instance | BindingFlags.NonPublic);
+            return typeof(Player).GetMethod("ProceedDamageThroughArmor", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPrefix]
         private static void PatchPrefix(ref Player __instance, DamageInfo damageInfo)
@@ -602,7 +603,7 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(Player).GetMethod("OnBeenKilledByAggressor", BindingFlags.Instance | BindingFlags.NonPublic);
+            return typeof(Player).GetMethod("OnBeenKilledByAggressor", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPostfix]
         private static void PatchPostFix(ref Player __instance, Player aggressor, DamageInfo damageInfo, EBodyPart bodyPart, EDamageType lethalDamageType)
