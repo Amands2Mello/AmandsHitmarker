@@ -392,7 +392,7 @@ namespace AmandsHitmarker
                                 break;
                             default:
                                 if (AmandsHitmarkerHelper.IsFollower(killRole)) HitmarkerColor = AHitmarkerPlugin.FollowerColor.Value;
-                                if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole)) HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
+                                if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(killRole)) HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
                                 break;
                         }
                     }
@@ -729,7 +729,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(killRole) && AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole))
+                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(killRole))
                         {
                             if (AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.BossColor.Value;
                             sprite = LoadedSprites[AHitmarkerPlugin.MultiKillfeedGenericShape.Value];
@@ -888,7 +888,6 @@ namespace AmandsHitmarker
             if (TRH != null) Destroy(TRH);
             if (BLH != null) Destroy(BLH);
             if (BRH != null) Destroy(BRH);
-
             if (amandsDamageIndicator) Destroy(amandsDamageIndicator.gameObject);
         }
         public static void CreateUpperText(string text, int fontSize, float time, float OpacitySpeed)
@@ -974,7 +973,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(killRole)) RoleColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBoss(killRole)) RoleColor = AHitmarkerPlugin.BossColor.Value;
+                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(killRole)) RoleColor = AHitmarkerPlugin.BossColor.Value;
                         KillfeedColor = RoleColor;
                         break;
                 }
@@ -1153,7 +1152,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(aggressorRole)) aggressorColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(aggressorRole) || AmandsHitmarkerHelper.CountAsBoss(aggressorRole)) aggressorColor = AHitmarkerPlugin.BossColor.Value;
+                        if (AmandsHitmarkerHelper.IsBoss(aggressorRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(aggressorRole)) aggressorColor = AHitmarkerPlugin.BossColor.Value;
                         break;
                 }
             }
@@ -1187,7 +1186,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(victimRole)) victimColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(victimRole) || AmandsHitmarkerHelper.CountAsBoss(victimRole)) victimColor = AHitmarkerPlugin.BossColor.Value;
+                        if (AmandsHitmarkerHelper.IsBoss(victimRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(victimRole)) victimColor = AHitmarkerPlugin.BossColor.Value;
                         break;
                 }
             }
@@ -2068,8 +2067,8 @@ namespace AmandsHitmarker
             imageGameObject = new GameObject("DamageIndicatorImage");
             imageRectTransform = imageGameObject.AddComponent<RectTransform>();
             imageRectTransform.SetParent(anchorRectTransform);
-            imageRectTransform.anchoredPosition = new Vector2(0, AHitmarkerPlugin.DamageIndicatorOffset.Value);
-            imageRectTransform.sizeDelta = new Vector2(1024, 512) * AHitmarkerPlugin.DamageIndicatorSize.Value;
+            imageRectTransform.anchoredPosition = new Vector2(0,AHitmarkerPlugin.DamageIndicatorOffset.Value);
+            imageRectTransform.sizeDelta = new Vector2(1024,512) * AHitmarkerPlugin.DamageIndicatorSize.Value;
             image = imageGameObject.AddComponent<Image>();
             image.sprite = AmandsHitmarkerClass.LoadedSprites["DamageIndicator.png"];
             image.raycastTarget = false;
@@ -2133,8 +2132,8 @@ namespace AmandsHitmarker
             {
                 Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.localPlayer.Rotation.x, 0) * Vector3.forward;
                 Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.localPlayer.CameraContainer.transform.position).normalized;
-                float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x), Vector3.Dot(forward, HitDirection)) * Mathf.Rad2Deg;
-                anchorRectTransform.eulerAngles = new Vector3(0, 0, angle);
+                float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x),Vector3.Dot(forward,HitDirection)) * Mathf.Rad2Deg;
+                anchorRectTransform.eulerAngles = new Vector3(0,0,angle);
             }
             if (UpdateOpacity)
             {
