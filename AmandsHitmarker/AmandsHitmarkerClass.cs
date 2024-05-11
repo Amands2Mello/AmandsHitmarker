@@ -65,8 +65,8 @@ namespace AmandsHitmarker
         public static Dictionary<string, Sprite> LoadedRanks = new Dictionary<string, Sprite>();
         public static Dictionary<string, AudioClip> LoadedAudioClips = new Dictionary<string, AudioClip>();
         private static Sprite sprite;
-        public static LocalPlayer localPlayer;
-        public static string localPlayerNickname;
+        public static Player Player;
+        public static string playerNickname;
         public static GameObject PlayerSuperior;
         public static FirearmController firearmController;
         public static SSAA FPSCameraSSAA;
@@ -392,7 +392,7 @@ namespace AmandsHitmarker
                                 break;
                             default:
                                 if (AmandsHitmarkerHelper.IsFollower(killRole)) HitmarkerColor = AHitmarkerPlugin.FollowerColor.Value;
-                                if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(killRole)) HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
+                                if (AmandsHitmarkerHelper.CountAsBossForStatistics(killRole)) HitmarkerColor = AHitmarkerPlugin.BossColor.Value;
                                 break;
                         }
                     }
@@ -729,7 +729,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(killRole) && AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(killRole))
+                        if (AmandsHitmarkerHelper.CountAsBossForStatistics(killRole))
                         {
                             if (AHitmarkerPlugin.MultiKillfeedColorMode.Value == EMultiKillfeedColorMode.Colored) MultiKillfeedColor = AHitmarkerPlugin.BossColor.Value;
                             sprite = LoadedSprites[AHitmarkerPlugin.MultiKillfeedGenericShape.Value];
@@ -973,7 +973,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(killRole)) RoleColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(killRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(killRole)) RoleColor = AHitmarkerPlugin.BossColor.Value;
+                        if (AmandsHitmarkerHelper.CountAsBossForStatistics(killRole)) RoleColor = AHitmarkerPlugin.BossColor.Value;
                         KillfeedColor = RoleColor;
                         break;
                 }
@@ -990,10 +990,10 @@ namespace AmandsHitmarker
             switch (AHitmarkerPlugin.KillStart.Value)
             {
                 case EKillStart.PlayerWeapon:
-                    if (localPlayer != null)
+                    if (Player != null)
                     {
-                        aggNickname = localPlayer.Profile.Nickname;
-                        aggPlayerSide = localPlayer.Profile.Side;
+                        aggNickname = Player.Profile.Nickname;
+                        aggPlayerSide = Player.Profile.Side;
                     }
                     Color playerRoleColor = AHitmarkerPlugin.KillTextColor.Value;
                     switch (AHitmarkerPlugin.KillNameColor.Value)
@@ -1152,7 +1152,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(aggressorRole)) aggressorColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(aggressorRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(aggressorRole)) aggressorColor = AHitmarkerPlugin.BossColor.Value;
+                        if (AmandsHitmarkerHelper.CountAsBossForStatistics(aggressorRole)) aggressorColor = AHitmarkerPlugin.BossColor.Value;
                         break;
                 }
             }
@@ -1186,7 +1186,7 @@ namespace AmandsHitmarker
                         break;
                     default:
                         if (AmandsHitmarkerHelper.IsFollower(victimRole)) victimColor = AHitmarkerPlugin.FollowerColor.Value;
-                        if (AmandsHitmarkerHelper.IsBoss(victimRole) || AmandsHitmarkerHelper.CountAsBossForStatistics(victimRole)) victimColor = AHitmarkerPlugin.BossColor.Value;
+                        if (AmandsHitmarkerHelper.CountAsBossForStatistics(victimRole)) victimColor = AHitmarkerPlugin.BossColor.Value;
                         break;
                 }
             }
@@ -1330,6 +1330,7 @@ namespace AmandsHitmarker
             if (amandsDamageIndicator)
             {
                 amandsDamageIndicator.UpdateDamageIndicator();
+                amandsDamageIndicator.SetLocation(Vector3.zero);
             }
             else if (AHitmarkerPlugin.EnableDamageIndicator.Value && BattleUIScreenTransform != null)
             {
@@ -1611,7 +1612,7 @@ namespace AmandsHitmarker
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
                 //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
-                if (CanDebugReloadFiles && localPlayer == null)
+                if (CanDebugReloadFiles && Player == null)
                 {
                     CanDebugReloadFiles = false;
                     ReloadFiles();
@@ -1624,7 +1625,7 @@ namespace AmandsHitmarker
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.HeadshotHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
                 //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.HeadshotHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
-                if (CanDebugReloadFiles && localPlayer == null)
+                if (CanDebugReloadFiles && Player == null)
                 {
                     CanDebugReloadFiles = false;
                     ReloadFiles();
@@ -1637,7 +1638,7 @@ namespace AmandsHitmarker
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
                 //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.KillHitmarkerSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
-                if (CanDebugReloadFiles && localPlayer == null)
+                if (CanDebugReloadFiles && Player == null)
                 {
                     CanDebugReloadFiles = false;
                     ReloadFiles();
@@ -1650,7 +1651,7 @@ namespace AmandsHitmarker
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
                 //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
-                if (CanDebugReloadFiles && localPlayer == null)
+                if (CanDebugReloadFiles && Player == null)
                 {
                     CanDebugReloadFiles = false;
                     ReloadFiles();
@@ -1663,7 +1664,7 @@ namespace AmandsHitmarker
             if (LoadedAudioClips.ContainsKey(AHitmarkerPlugin.KillHitmarkerSound.Value))// && Singleton<BetterAudio>.Instance != null)
             {
                 //Singleton<BetterAudio>.Instance.PlayNonspatial(LoadedAudioClips[AHitmarkerPlugin.ArmorBreakSound.Value], BetterAudio.AudioSourceGroupType.Nonspatial, 0.0f, AHitmarkerPlugin.SoundVolume.Value);
-                if (CanDebugReloadFiles && localPlayer == null)
+                if (CanDebugReloadFiles && Player == null)
                 {
                     CanDebugReloadFiles = false;
                     ReloadFiles();
@@ -2118,20 +2119,20 @@ namespace AmandsHitmarker
                 image2.color = new Color(color.r, color.g, color.b, Opacity2);
             }
 
-            if (AmandsHitmarkerClass.localPlayer != null)
+            if (AmandsHitmarkerClass.Player != null)
             {
-                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.localPlayer.Rotation.x, 0) * Vector3.forward;
-                Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.localPlayer.CameraContainer.transform.position).normalized;
+                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.Player.Rotation.x, 0) * Vector3.forward;
+                Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.Player.CameraContainer.transform.position).normalized;
                 float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x), Vector3.Dot(forward, HitDirection)) * Mathf.Rad2Deg;
                 anchorRectTransform.eulerAngles = new Vector3(0, 0, angle);
             }
         }
         public void Update()
         {
-            if (AmandsHitmarkerClass.localPlayer != null)
+            if (AmandsHitmarkerClass.Player != null)
             {
-                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.localPlayer.Rotation.x, 0) * Vector3.forward;
-                Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.localPlayer.CameraContainer.transform.position).normalized;
+                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.Player.Rotation.x, 0) * Vector3.forward;
+                Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.Player.CameraContainer.transform.position).normalized;
                 float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x),Vector3.Dot(forward,HitDirection)) * Mathf.Rad2Deg;
                 anchorRectTransform.eulerAngles = new Vector3(0,0,angle);
             }
