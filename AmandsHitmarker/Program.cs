@@ -15,7 +15,7 @@ using System.Linq;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.0")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.1")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -154,7 +154,7 @@ namespace AmandsHitmarker
         private void Awake()
         {
             Debug.LogError("AmandsHitmarker Awake()");
-            Hook = new GameObject();
+            Hook = new GameObject("Hitmarker");
             AmandsHitmarkerClassComponent = Hook.AddComponent<AmandsHitmarkerClass>();
             AmandsHitmarkerClass.HitmarkerAudioSource = Hook.AddComponent<AudioSource>();
             DontDestroyOnLoad(Hook);
@@ -295,7 +295,7 @@ namespace AmandsHitmarker
             new AmandsArmorDamagePatch().Enable();
             new AmandsProceedArmorDamagePatch().Enable();
             new AmandsKillPatch().Enable();
-            new AmandsLocalPlayerPatch().Enable();
+            new AmandsPlayerPatch().Enable();
             new AmandsMenuUIPatch().Enable();
             new AmandsBattleUIScreenPatch().Enable();
             new AmandsSSAAPatch().Enable();
@@ -408,21 +408,20 @@ namespace AmandsHitmarker
             if (button) AmandsHitmarkerClass.ReloadUI();
         }
     }
-    public class AmandsLocalPlayerPatch : ModulePatch
+    public class AmandsPlayerPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(LocalPlayer).GetMethod("Create", BindingFlags.Static | BindingFlags.Public);
+            return typeof(Player).GetMethod("Init", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPostfix]
-        private static void PatchPostFix(ref Task<LocalPlayer> __result)
+        private static void PatchPostFix(ref Player __instance)
         {
-            LocalPlayer localPlayer = __result.Result;
-            if (localPlayer != null && localPlayer.IsYourPlayer)
+            if (__instance != null && __instance.IsYourPlayer)
             {
-                AmandsHitmarkerClass.localPlayer = localPlayer;
-                AmandsHitmarkerClass.localPlayerNickname = localPlayer.Profile.Nickname;
-                AmandsHitmarkerClass.PlayerSuperior = localPlayer.gameObject;
+                AmandsHitmarkerClass.Player = __instance;
+                AmandsHitmarkerClass.playerNickname = __instance.Profile.Nickname;
+                AmandsHitmarkerClass.PlayerSuperior = __instance.gameObject;
                 AmandsHitmarkerClass.Kills = 0;
                 AmandsHitmarkerClass.ReloadFiles();
                 AmandsHitmarkerClass.CanDebugReloadFiles = true;
@@ -489,7 +488,7 @@ namespace AmandsHitmarker
             Player player = Traverse.Create(damageInfo).Field("Player").GetValue<object>() as Player;
             if (player != null)
             {
-                IsYourPlayerAgresssor = AmandsHitmarkerClass.localPlayer != null && player == AmandsHitmarkerClass.localPlayer;
+                IsYourPlayerAgresssor = AmandsHitmarkerClass.Player != null && player == AmandsHitmarkerClass.Player;
             }
             else
             {
@@ -497,14 +496,14 @@ namespace AmandsHitmarker
                 if (playerObject != null)
                 {
                     string AggressorNickname = Traverse.Create(playerObject).Property("Nickname").GetValue<string>();
-                    IsYourPlayerAgresssor = AggressorNickname == AmandsHitmarkerClass.localPlayerNickname;
+                    IsYourPlayerAgresssor = AggressorNickname == AmandsHitmarkerClass.playerNickname;
                 }
             }
             if (IsYourPlayerAgresssor)
             {
-                if (AmandsHitmarkerClass.localPlayer != null)
+                if (AmandsHitmarkerClass.Player != null)
                 {
-                    float distance = Vector3.Distance(AmandsHitmarkerClass.localPlayer.Position, __instance.Position);
+                    float distance = Vector3.Distance(AmandsHitmarkerClass.Player.Position, __instance.Position);
                     if (distance < AHitmarkerPlugin.StartDistance.Value || distance > AHitmarkerPlugin.EndDistance.Value)
                     {
                         AmandsHitmarkerClass.armorHitmarker = false;
@@ -536,7 +535,7 @@ namespace AmandsHitmarker
             }
             else
             {
-                if (AmandsHitmarkerClass.localPlayer != null && __instance == AmandsHitmarkerClass.localPlayer && AHitmarkerPlugin.EnableDamageIndicator.Value && AmandsHitmarkerClass.amandsDamageIndicator != null)
+                if (AmandsHitmarkerClass.Player != null && __instance == AmandsHitmarkerClass.Player && AHitmarkerPlugin.EnableDamageIndicator.Value && AmandsHitmarkerClass.amandsDamageIndicator != null)
                 {
                     AmandsHitmarkerClass.amandsDamageIndicator.SetLocation(damageInfo.MasterOrigin);
                 }
@@ -556,7 +555,7 @@ namespace AmandsHitmarker
             Player player = Traverse.Create(damageInfo).Field("Player").GetValue<object>() as Player;
             if (player != null)
             {
-                if (AmandsHitmarkerClass.localPlayer != null && player == AmandsHitmarkerClass.localPlayer && !__instance.IsYourPlayer)
+                if (AmandsHitmarkerClass.Player != null && player == AmandsHitmarkerClass.Player && !__instance.IsYourPlayer)
                 {
                     AHitmarkerPlugin.PlayerProceedDamageThroughArmor = __instance;
                 }
@@ -567,7 +566,7 @@ namespace AmandsHitmarker
                 if (playerObject != null)
                 {
                     string Nickname = Traverse.Create(playerObject).Property("Nickname").GetValue<string>();
-                    if (Nickname == AmandsHitmarkerClass.localPlayerNickname)
+                    if (Nickname == AmandsHitmarkerClass.playerNickname)
                     {
                         AHitmarkerPlugin.PlayerProceedDamageThroughArmor = __instance;
                     }
@@ -608,7 +607,7 @@ namespace AmandsHitmarker
         [PatchPostfix]
         private static void PatchPostFix(ref Player __instance, Player aggressor, DamageInfo damageInfo, EBodyPart bodyPart, EDamageType lethalDamageType)
         {
-            if (AmandsHitmarkerClass.localPlayer != null && aggressor == AmandsHitmarkerClass.localPlayer && __instance != AmandsHitmarkerClass.localPlayer)
+            if (AmandsHitmarkerClass.Player != null && aggressor == AmandsHitmarkerClass.Player && __instance != AmandsHitmarkerClass.Player)
             {
                 float distance = Vector3.Distance(aggressor.Position, __instance.Position);
                 if (distance < AHitmarkerPlugin.StartDistance.Value || distance > AHitmarkerPlugin.EndDistance.Value) return;
@@ -629,7 +628,7 @@ namespace AmandsHitmarker
             }
             if (AHitmarkerPlugin.EnableRaidKillfeed.Value && aggressor != null)
             {
-                if (AmandsHitmarkerClass.localPlayer != null && AmandsHitmarkerClass.localPlayer != aggressor && Vector3.Distance(AmandsHitmarkerClass.localPlayer.Position, __instance.Position) > AHitmarkerPlugin.RaidKillDistance.Value) return;
+                if (AmandsHitmarkerClass.Player != null && AmandsHitmarkerClass.Player != aggressor && Vector3.Distance(AmandsHitmarkerClass.Player.Position, __instance.Position) > AHitmarkerPlugin.RaidKillDistance.Value) return;
                 AmandsHitmarkerClass.RaidKillfeed(aggressor.Side, Traverse.Create(Traverse.Create(aggressor.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>(), (aggressor.Side == EPlayerSide.Savage ? AmandsHitmarkerHelper.Transliterate(aggressor.Profile.Nickname) : aggressor.Profile.Nickname), damageInfo.Weapon == null ? "?" : AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName, 0), lethalDamageType, __instance.Side, Traverse.Create(Traverse.Create(__instance.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>(), (__instance.Side == EPlayerSide.Savage ? AmandsHitmarkerHelper.Transliterate(__instance.Profile.Nickname) : __instance.Profile.Nickname));
             }
         }
