@@ -3,7 +3,7 @@ using BepInEx.Configuration;
 using EFT;
 using EFT.InventoryLogic;
 using System.Reflection;
-using Aki.Reflection.Patching;
+using SPT.Reflection.Patching;
 using UnityEngine;
 using TMPro;
 using HarmonyLib;
@@ -15,7 +15,7 @@ using System.Linq;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.1")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.2")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -448,10 +448,10 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(EFT.UI.BattleUIScreen).GetMethods(BindingFlags.Instance | BindingFlags.Public).First(x => x.Name == "Show" && x.GetParameters()[0].Name == "owner");
+            return typeof(EFT.UI.EftBattleUIScreen).GetMethods(BindingFlags.Instance | BindingFlags.Public).First(x => x.Name == "Show" && x.GetParameters()[0].Name == "owner");
         }
         [PatchPostfix]
-        private static void PatchPostFix(ref EFT.UI.BattleUIScreen __instance)
+        private static void PatchPostFix(ref EFT.UI.EftBattleUIScreen __instance)
         {
             if (AmandsHitmarkerClass.ActiveUIScreen == __instance.gameObject) return;
             AmandsHitmarkerClass.ActiveUIScreen = __instance.gameObject;
