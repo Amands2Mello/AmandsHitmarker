@@ -2121,7 +2121,7 @@ namespace AmandsHitmarker
 
             if (AmandsHitmarkerClass.Player != null)
             {
-                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.Player.Rotation.x, 0) * Vector3.forward;
+                Vector3 forward = Quaternion.Euler(0, ((IPlayer)AmandsHitmarkerClass.Player).Rotation.x, 0) * Vector3.forward;
                 Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.Player.CameraContainer.transform.position).normalized;
                 float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x), Vector3.Dot(forward, HitDirection)) * Mathf.Rad2Deg;
                 anchorRectTransform.eulerAngles = new Vector3(0, 0, angle);
@@ -2131,7 +2131,7 @@ namespace AmandsHitmarker
         {
             if (AmandsHitmarkerClass.Player != null)
             {
-                Vector3 forward = Quaternion.Euler(0, AmandsHitmarkerClass.Player.Rotation.x, 0) * Vector3.forward;
+                Vector3 forward = Quaternion.Euler(0, ((IPlayer)AmandsHitmarkerClass.Player).Rotation.x, 0) * Vector3.forward;
                 Vector3 HitDirection = (HitLocation - AmandsHitmarkerClass.Player.CameraContainer.transform.position).normalized;
                 float angle = Mathf.Atan2((forward.x * HitDirection.z) - (forward.z * HitDirection.x),Vector3.Dot(forward,HitDirection)) * Mathf.Rad2Deg;
                 anchorRectTransform.eulerAngles = new Vector3(0,0,angle);

@@ -7,19 +7,17 @@ using SPT.Reflection.Patching;
 using UnityEngine;
 using TMPro;
 using HarmonyLib;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
-using EFT.UI;
 using System.Linq;
+using EFT.UI;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.2")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "3.0.0")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
-        public static AmandsHitmarkerClass AmandsHitmarkerClassComponent;
         public static Player PlayerProceedDamageThroughArmor;
 
         public static ConfigEntry<bool> EnableHitmarker { get; set; }
@@ -155,7 +153,7 @@ namespace AmandsHitmarker
         {
             Debug.LogError("AmandsHitmarker Awake()");
             Hook = new GameObject("Hitmarker");
-            AmandsHitmarkerClassComponent = Hook.AddComponent<AmandsHitmarkerClass>();
+            Hook.AddComponent<AmandsHitmarkerClass>();
             AmandsHitmarkerClass.HitmarkerAudioSource = Hook.AddComponent<AudioSource>();
             DontDestroyOnLoad(Hook);
         }
@@ -432,10 +430,10 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(EFT.UI.MenuUI).GetMethod("Awake", BindingFlags.Instance | BindingFlags.Public);
+            return typeof(MenuUI).GetMethod("Awake", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPostfix]
-        private static void PatchPostFix(ref EFT.UI.MenuUI __instance)
+        private static void PatchPostFix(ref MenuUI __instance)
         {
             if (AmandsHitmarkerClass.ActiveUIScreen == __instance.transform.GetChild(0).gameObject) return;
             AmandsHitmarkerClass.ActiveUIScreen = __instance.transform.GetChild(0).gameObject;
@@ -448,10 +446,10 @@ namespace AmandsHitmarker
     {
         protected override MethodBase GetTargetMethod()
         {
-            return typeof(EFT.UI.EftBattleUIScreen).GetMethods(BindingFlags.Instance | BindingFlags.Public).First(x => x.Name == "Show" && x.GetParameters()[0].Name == "owner");
+            return typeof(EftBattleUIScreen).GetMethods(BindingFlags.Instance | BindingFlags.Public).First(x => x.Name == "Show" && x.GetParameters()[0].Name == "owner");
         }
         [PatchPostfix]
-        private static void PatchPostFix(ref EFT.UI.EftBattleUIScreen __instance)
+        private static void PatchPostFix(ref EftBattleUIScreen __instance)
         {
             if (AmandsHitmarkerClass.ActiveUIScreen == __instance.gameObject) return;
             AmandsHitmarkerClass.ActiveUIScreen = __instance.gameObject;
@@ -503,7 +501,7 @@ namespace AmandsHitmarker
             {
                 if (AmandsHitmarkerClass.Player != null)
                 {
-                    float distance = Vector3.Distance(AmandsHitmarkerClass.Player.Position, __instance.Position);
+                    float distance = Vector3.Distance(((IPlayer)AmandsHitmarkerClass.Player).Position, ((IPlayer) __instance).Position);
                     if (distance < AHitmarkerPlugin.StartDistance.Value || distance > AHitmarkerPlugin.EndDistance.Value)
                     {
                         AmandsHitmarkerClass.armorHitmarker = false;
@@ -609,7 +607,7 @@ namespace AmandsHitmarker
         {
             if (AmandsHitmarkerClass.Player != null && aggressor == AmandsHitmarkerClass.Player && __instance != AmandsHitmarkerClass.Player)
             {
-                float distance = Vector3.Distance(aggressor.Position, __instance.Position);
+                float distance = Vector3.Distance(((IPlayer) aggressor).Position, ((IPlayer) __instance).Position);
                 if (distance < AHitmarkerPlugin.StartDistance.Value || distance > AHitmarkerPlugin.EndDistance.Value) return;
                 AmandsHitmarkerClass.killHitmarker = true;
                 AmandsHitmarkerClass.killDamageInfo = damageInfo;
@@ -628,7 +626,7 @@ namespace AmandsHitmarker
             }
             if (AHitmarkerPlugin.EnableRaidKillfeed.Value && aggressor != null)
             {
-                if (AmandsHitmarkerClass.Player != null && AmandsHitmarkerClass.Player != aggressor && Vector3.Distance(AmandsHitmarkerClass.Player.Position, __instance.Position) > AHitmarkerPlugin.RaidKillDistance.Value) return;
+                if (AmandsHitmarkerClass.Player != null && AmandsHitmarkerClass.Player != aggressor && Vector3.Distance(((IPlayer) AmandsHitmarkerClass.Player).Position, ((IPlayer) __instance).Position) > AHitmarkerPlugin.RaidKillDistance.Value) return;
                 AmandsHitmarkerClass.RaidKillfeed(aggressor.Side, Traverse.Create(Traverse.Create(aggressor.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>(), (aggressor.Side == EPlayerSide.Savage ? AmandsHitmarkerHelper.Transliterate(aggressor.Profile.Nickname) : aggressor.Profile.Nickname), damageInfo.Weapon == null ? "?" : AmandsHitmarkerHelper.Localized(damageInfo.Weapon.ShortName, 0), lethalDamageType, __instance.Side, Traverse.Create(Traverse.Create(__instance.Profile.Info).Field("Settings").GetValue<object>()).Field("Role").GetValue<WildSpawnType>(), (__instance.Side == EPlayerSide.Savage ? AmandsHitmarkerHelper.Transliterate(__instance.Profile.Nickname) : __instance.Profile.Nickname));
             }
         }
