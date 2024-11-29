@@ -21,14 +21,14 @@ namespace AmandsHitmarker
         public static GameObject killListGameObject;
         public static AmandsKillfeedText LastAmandsKillfeedText;
         public static bool hitmarker;
-        public static DamageInfo damageInfo = new DamageInfo();
+        public static DamageInfoStruct damageInfo = new DamageInfoStruct();
         public static EBodyPart bodyPart = EBodyPart.Chest;
         public static bool armorHitmarker;
         //public static float armorDamage;
-        //public static DamageInfo armorDamageInfo;
+        //public static DamageInfoStruct armorDamageInfo;
         public static bool armorBreak;
         public static bool killHitmarker;
-        public static DamageInfo killDamageInfo = new DamageInfo();
+        public static DamageInfoStruct killDamageInfo = new DamageInfoStruct();
         public static EPlayerSide killPlayerSide;
         public static EBodyPart killBodyPart = EBodyPart.Chest;
         public static WildSpawnType killRole;
