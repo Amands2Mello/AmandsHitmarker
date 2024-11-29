@@ -15,7 +15,7 @@ using System.Linq;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.2")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.3")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
@@ -481,7 +481,7 @@ namespace AmandsHitmarker
             return typeof(Player).GetMethod("ApplyDamageInfo", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPostfix]
-        private static void PatchPostFix(ref Player __instance, DamageInfo damageInfo, EBodyPart bodyPartType)
+        private static void PatchPostFix(ref Player __instance, DamageInfoStruct damageInfo, EBodyPart bodyPartType)
         {
             // Temporary old version support code
             bool IsYourPlayerAgresssor = false;
@@ -549,7 +549,7 @@ namespace AmandsHitmarker
             return typeof(Player).GetMethod("ProceedDamageThroughArmor", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPrefix]
-        private static void PatchPrefix(ref Player __instance, DamageInfo damageInfo)
+        private static void PatchPrefix(ref Player __instance, DamageInfoStruct damageInfo)
         {
             // Temporary old version support code
             Player player = Traverse.Create(damageInfo).Field("Player").GetValue<object>() as Player;
@@ -605,7 +605,7 @@ namespace AmandsHitmarker
             return typeof(Player).GetMethod("OnBeenKilledByAggressor", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPostfix]
-        private static void PatchPostFix(ref Player __instance, Player aggressor, DamageInfo damageInfo, EBodyPart bodyPart, EDamageType lethalDamageType)
+        private static void PatchPostFix(ref Player __instance, Player aggressor, DamageInfoStruct damageInfo, EBodyPart bodyPart, EDamageType lethalDamageType)
         {
             if (AmandsHitmarkerClass.Player != null && aggressor == AmandsHitmarkerClass.Player && __instance != AmandsHitmarkerClass.Player)
             {
