@@ -15,12 +15,11 @@ using System.Linq;
 
 namespace AmandsHitmarker
 {
-    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.3")]
+    [BepInPlugin("com.Amanda.Hitmarker", "Hitmarker", "2.6.4")]
     public class AHitmarkerPlugin : BaseUnityPlugin
     {
         public static GameObject Hook;
         public static AmandsHitmarkerClass AmandsHitmarkerClassComponent;
-        public static Player PlayerProceedDamageThroughArmor;
 
         public static ConfigEntry<bool> EnableHitmarker { get; set; }
         public static ConfigEntry<EArmorHitmarker> EnableArmorHitmarker { get; set; }
@@ -293,7 +292,6 @@ namespace AmandsHitmarker
 
             new AmandsDamagePatch().Enable();
             new AmandsArmorDamagePatch().Enable();
-            new AmandsProceedArmorDamagePatch().Enable();
             new AmandsKillPatch().Enable();
             new AmandsPlayerPatch().Enable();
             new AmandsMenuUIPatch().Enable();
@@ -542,38 +540,6 @@ namespace AmandsHitmarker
             }
         }
     }
-    public class AmandsProceedArmorDamagePatch : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod()
-        {
-            return typeof(Player).GetMethod("ProceedDamageThroughArmor", BindingFlags.Instance | BindingFlags.Public);
-        }
-        [PatchPrefix]
-        private static void PatchPrefix(ref Player __instance, DamageInfoStruct damageInfo)
-        {
-            // Temporary old version support code
-            Player player = Traverse.Create(damageInfo).Field("Player").GetValue<object>() as Player;
-            if (player != null)
-            {
-                if (AmandsHitmarkerClass.Player != null && player == AmandsHitmarkerClass.Player && !__instance.IsYourPlayer)
-                {
-                    AHitmarkerPlugin.PlayerProceedDamageThroughArmor = __instance;
-                }
-            }
-            else
-            {
-                object playerObject = Traverse.Create(damageInfo).Field("Player").GetValue<object>();
-                if (playerObject != null)
-                {
-                    string Nickname = Traverse.Create(playerObject).Property("Nickname").GetValue<string>();
-                    if (Nickname == AmandsHitmarkerClass.playerNickname)
-                    {
-                        AHitmarkerPlugin.PlayerProceedDamageThroughArmor = __instance;
-                    }
-                }
-            }
-        }
-    }
     public class AmandsArmorDamagePatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
@@ -581,12 +547,11 @@ namespace AmandsHitmarker
             return typeof(ArmorComponent).GetMethod("ApplyDurabilityDamage", BindingFlags.Instance | BindingFlags.Public);
         }
         [PatchPrefix]
-        private static void PatchPrefix(ref ArmorComponent __instance, float armorDamage)
+        private static void PatchPrefix(ref ArmorComponent __instance, float armorDamage, List<ArmorComponent> armorComponents)
         {
-            if (AHitmarkerPlugin.PlayerProceedDamageThroughArmor != null && armorDamage > 0)
+            if (armorDamage > 0)
             {
-                List<ArmorComponent> list = Traverse.Create(AHitmarkerPlugin.PlayerProceedDamageThroughArmor).Field("_preAllocatedArmorComponents").GetValue<List<ArmorComponent>>();
-                if (list.Contains(__instance))
+                if (armorComponents.Contains(__instance))
                 {
                     AmandsHitmarkerClass.ArmorDamageNumber += Mathf.Min(__instance.Repairable.Durability, armorDamage);
                     AmandsHitmarkerClass.armorHitmarker = true;
